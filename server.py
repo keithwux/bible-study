@@ -594,12 +594,38 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error": str(exc)}, 500)
 
 
+def start_tls():
+    """同一個程序再開一個 HTTPS 埠（手機瀏覽器強制 HTTPS 時用）。
+
+    由環境變數開啟：BIBLE_WEB_TLS_PORT；憑證預設 <程式目錄>/certs/cert.pem 與 key.pem，
+    可用 BIBLE_TLS_CERT / BIBLE_TLS_KEY 指定。找不到憑證就只跑 HTTP。
+    """
+    tls_port = (os.environ.get("BIBLE_WEB_TLS_PORT") or "").strip()
+    if not tls_port:
+        return None
+    cert = os.environ.get("BIBLE_TLS_CERT") or os.path.join(HERE, "certs", "cert.pem")
+    key = os.environ.get("BIBLE_TLS_KEY") or os.path.join(HERE, "certs", "key.pem")
+    if not (os.path.exists(cert) and os.path.exists(key)):
+        print(f"（未開 HTTPS：找不到憑證 {cert}）", file=sys.stderr)
+        return None
+    import ssl
+    import threading
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(cert, key)
+    srv = ThreadingHTTPServer((HOST, int(tls_port)), Handler)
+    srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    print(f"查經網站(HTTPS): https://{HOST}:{tls_port}")
+    return srv
+
+
 def main():
     if not os.path.exists(DB):
         print("找不到 bible.sqlite：", DB, "\n先執行 python3 -I bible_db.py --build", file=sys.stderr)
         raise SystemExit(1)
     srv = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"查經網站: http://{HOST}:{PORT}   資料: {DATA}")
+    start_tls()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
