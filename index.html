@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>查經</title>
+<style>
+  :root{
+    --paper:#fbfaf6; --panel:#fffefb; --ink:#15171a; --muted:#71767d;
+    --line:#e6e2d8; --hl:#f2efe6; --accent:#9a7b57; --accent-ink:#7c5f40;
+    --serif:"Songti TC","Noto Serif TC","Source Han Serif TC",Georgia,serif;
+    --sans:-apple-system,"PingFang TC","Noto Sans TC","Helvetica Neue",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --header:56px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#111315; --panel:#171a1d; --ink:#e8e6e1; --muted:#8f969d;
+      --line:#282c31; --hl:#1f2429; --accent:#c9a57a; --accent-ink:#d9bb94;
+    }
+    .strong-def{color:#fff}
+  }
+  html[data-theme="light"]{
+    --paper:#fbfaf6; --panel:#fffefb; --ink:#15171a; --muted:#71767d;
+    --line:#e6e2d8; --hl:#f2efe6; --accent:#9a7b57; --accent-ink:#7c5f40;
+  }
+  html[data-theme="dark"]{
+    --paper:#111315; --panel:#171a1d; --ink:#e8e6e1; --muted:#8f969d;
+    --line:#282c31; --hl:#1f2429; --accent:#c9a57a; --accent-ink:#d9bb94;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:15px;-webkit-font-smoothing:antialiased}
+  button,input,select{font:inherit;color:inherit}
+  button{background:none;border:0;cursor:pointer;padding:0}
+  a{color:var(--accent-ink);text-decoration:none}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  /* ---------- header ---------- */
+  header{height:var(--header);display:flex;align-items:center;gap:14px;
+    padding:0 18px;border-bottom:1px solid var(--line);background:var(--paper);
+    position:relative;z-index:30}
+  .brand{font-family:var(--serif);font-size:17px;letter-spacing:.16em;
+    color:var(--ink);white-space:nowrap;padding-right:2px}
+  .brand small{font-family:var(--sans);font-size:11px;letter-spacing:.08em;
+    color:var(--muted);margin-left:8px}
+  .bookbtn{display:flex;align-items:baseline;gap:6px;padding:6px 10px;border:1px solid var(--line);
+    border-radius:8px;background:var(--panel);white-space:nowrap}
+  .bookbtn:hover{border-color:var(--accent)}
+  .bookbtn b{font-weight:500}
+  .bookbtn span{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  form.search{display:flex;align-items:center;gap:0;flex:1;max-width:560px;
+    border:1px solid var(--line);border-radius:9px;background:var(--panel);overflow:hidden}
+  form.search:focus-within{border-color:var(--accent)}
+  form.search select{border:0;background:transparent;padding:8px 6px 8px 10px;
+    font-size:12.5px;color:var(--muted);border-right:1px solid var(--line);outline:none}
+  form.search input{border:0;background:transparent;padding:8px 10px;flex:1;min-width:60px;outline:none}
+  form.search button{padding:0 12px;height:34px;color:var(--muted)}
+  form.search button:hover{color:var(--ink)}
+  .tools{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .toggle{display:flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid var(--ink);
+    border-radius:8px;font-size:12.5px;color:var(--ink);background:var(--panel)}
+  .toggle[aria-pressed="true"]{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}
+  .iconbtn{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);
+    border-radius:8px;color:var(--muted);background:var(--panel)}
+  .iconbtn:hover{color:var(--ink);border-color:var(--accent)}
+  .helpbtn{display:flex;align-items:center;padding:6px 9px;border:1px solid var(--ink);
+    border-radius:8px;font-size:12.5px;color:var(--ink);background:var(--panel)}
+  /* 頂部三顆（EN／Help／主題）字級與顏色完全一致，只靠形狀與底線分辨 */
+  .tools .toggle,.tools .helpbtn,.tools .iconbtn{border-color:var(--ink);color:var(--ink);
+    background:var(--panel);font-size:12.5px;font-weight:400;letter-spacing:normal}
+  .tools .toggle:hover,.tools .helpbtn:hover,.tools .iconbtn:hover{background:var(--hl);color:var(--ink)}
+  .tabs{display:none}
+
+  /* ---------- layout ---------- */
+  main.app{display:grid;grid-template-columns:minmax(0,1fr) 7px var(--split,430px);
+    height:calc(100dvh - var(--header))}
+  .splitter{cursor:col-resize;position:relative;background:transparent;touch-action:none}
+  .splitter::after{content:"";position:absolute;left:3px;top:0;bottom:0;width:1px;
+    background:var(--line);transition:background .15s,left .15s}
+  .splitter:hover::after,.splitter.active::after{background:var(--accent);left:2px;width:3px}
+  body.resizing{cursor:col-resize;user-select:none}
+  body.resizing .reader,body.resizing .study{pointer-events:none}
+  .reader{overflow-y:auto;scroll-behavior:smooth}
+  .reader-inner{max-width:660px;margin:0 auto;padding:34px 36px 120px}
+  .reader-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+    margin:-34px 0 14px;padding:26px 0 12px;position:sticky;top:0;z-index:6;
+    background:var(--paper)}
+  .crumb{font-family:var(--serif);font-size:26px;letter-spacing:.06em;line-height:1.25}
+  .crumb em{font-style:normal;display:block;font-family:var(--sans);font-size:11.5px;
+    letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:7px}
+  .chapnav{display:flex;align-items:center;gap:4px}
+  .chapnav button{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);
+    border-radius:8px;color:var(--muted);background:var(--panel)}
+  .chapnav button:hover:not(:disabled){color:var(--ink);border-color:var(--accent)}
+  .chapnav button:disabled{opacity:.3;cursor:default}
+  .chapnav span{font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 6px}
+
+  .verse{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:9px 12px;
+    margin:0 -12px;border-radius:8px;cursor:pointer;position:relative}
+  .verse:hover{background:var(--hl)}
+  .verse.sel{background:var(--hl)}
+  .verse.sel::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:2px;
+    background:var(--accent);border-radius:2px}
+  .vn{font-family:var(--mono);font-size:11px;color:var(--accent);padding-top:7px;text-align:right;
+    user-select:none}
+  .zh{font-family:var(--serif);font-size:19px;line-height:1.95;letter-spacing:.01em}
+  .en{grid-column:2;color:var(--muted);font-size:12.5px;line-height:1.65;margin-top:5px}
+  .en b{font-family:var(--mono);font-weight:500;font-size:10.5px;letter-spacing:.04em;
+    color:var(--accent);margin-right:6px}
+  .en div+div{margin-top:3px}
+  .flash{animation:flash 1.6s ease-out}
+  @keyframes flash{0%{background:var(--hl);box-shadow:inset 2px 0 0 var(--accent)}100%{background:transparent}}
+
+  /* ---------- study pane ---------- */
+  .study{background:var(--panel);overflow-y:auto;
+    scroll-behavior:smooth}
+  .study-empty{padding:52px 32px;color:var(--muted);font-size:13.5px;line-height:2}
+  .study-empty h2{font-family:var(--serif);font-size:19px;color:var(--ink);
+    font-weight:400;margin:0 0 12px;letter-spacing:.06em}
+  .study-empty kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);
+    border-radius:4px;padding:1px 5px;color:var(--ink);background:var(--paper)}
+  .card-head{position:sticky;top:0;z-index:5;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:14px 22px 12px}
+  .card-head .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .card-ref{font-family:var(--serif);font-size:18px;letter-spacing:.05em}
+  .card-actions{display:flex;gap:2px}
+  .card-actions button{width:28px;height:28px;display:grid;place-items:center;border-radius:7px;
+    color:var(--muted)}
+  .card-actions button:hover{color:var(--ink);background:var(--hl)}
+  .font-size-control{display:flex;gap:2px;margin-left:6px;padding-left:8px;
+    border-left:1px solid var(--line)}
+  .font-size-btn{min-width:26px;height:26px;padding:0 5px;border-radius:6px;
+    font-family:var(--mono);font-size:11px;line-height:1;color:var(--muted)}
+  .font-size-btn:hover{color:var(--ink);background:var(--hl)}
+  .font-size-btn.active{color:var(--accent-ink);background:var(--hl);font-weight:600}
+  .card-lead{font-family:var(--serif);font-size:16.5px;line-height:1.9;margin:11px 0 0}
+  .card-body{padding:6px 22px 60px}
+  details.sec{border-bottom:1px solid var(--line)}
+  details.sec:last-child{border-bottom:0}
+  details.sec>summary{list-style:none;cursor:pointer;padding:13px 0;display:flex;align-items:center;
+    gap:8px;font-size:14px;letter-spacing:.1em;color:var(--accent-ink)}
+  details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary::before{content:"›";font-size:14px;color:var(--muted);
+    transition:transform .15s}
+  details.sec[open]>summary::before{transform:rotate(90deg)}
+  details.sec>summary .count{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .sec-body{padding:0 0 16px;font-size:13.5px;line-height:1.85;
+    font-family:var(--mono);letter-spacing:-.01em}
+  .sec-body.sec-zh{border-top:1px dashed var(--line);padding-top:14px;margin-top:4px}
+
+  .md h3{font-size:12px;letter-spacing:.1em;color:var(--accent-ink);font-weight:500;
+    margin:16px 0 6px}
+  .md p{margin:7px 0}
+  .md strong{font-weight:600}
+  .md ul{margin:8px 0;padding-left:18px}
+  .md li{margin:5px 0}
+  .md table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12.5px;display:block;
+    overflow-x:auto}
+  .md th,.md td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;
+    vertical-align:top}
+  .md th{font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.05em;
+    border-bottom:1px solid var(--accent)}
+  .md td:first-child{white-space:nowrap}
+  .md code{font-family:var(--mono);font-size:.9em}
+  .md .sn{font-family:var(--mono);font-size:11px;color:var(--accent)}
+
+  /* CBOL 大綱式註解：分層標題 + 註記 */
+  .cbol{margin:2px 0 2px}
+  .cb-l1{font-size:1.06em;font-weight:600;color:var(--accent-ink);letter-spacing:.03em;
+    margin:20px 0 7px;padding-top:14px;border-top:1px solid var(--line)}
+  .cbol>.cb-l1:first-child{margin-top:2px;padding-top:0;border-top:0}
+  .cb-l2{font-size:1em;font-weight:600;color:var(--ink);margin:15px 0 5px}
+  .cb-l3{font-size:.97em;font-weight:600;color:var(--ink);margin:12px 0 4px;
+    padding-left:9px;border-left:2px solid var(--hl)}
+  .cb-range{font-size:.86em;font-weight:400;color:var(--muted);margin-left:8px;
+    letter-spacing:0;white-space:nowrap}
+  .cbol .cb-p{margin:7px 0;padding-left:9px}
+  .cb-n{font-size:.92em;font-weight:600;color:var(--accent-ink);margin-right:5px}
+  .cb-note,.cb-hi{position:relative;color:var(--ink);line-height:1.8}
+  .cb-note{margin:9px 0;padding:1px 0 1px 25px}
+  .cb-note>.cb-m{position:absolute;left:5px;top:1px;color:var(--accent);font-size:.92em}
+  .cb-hi{margin:10px 0;padding:9px 11px 9px 28px;background:var(--hl);border-radius:8px}
+  .cb-hi>.cb-m{position:absolute;left:9px;top:9px;color:var(--accent);font-size:.92em}
+  .cb-q{font-weight:600;color:var(--ink)}
+  .cbol a.ref{color:var(--accent-ink);border-bottom:1px dotted var(--accent);
+    white-space:nowrap}
+  .cbol a.ref:hover{border-bottom-style:solid;background:var(--hl)}
+
+  /* strong word list */
+  .strong-list{display:flex;flex-direction:column;margin:-2px 0 0}
+  .strong-row{padding:9px 8px;margin:0 -8px;border-bottom:1px solid var(--line)}
+  .strong-row:last-child{border-bottom:0}
+  .strong-row:hover{background:var(--hl)}
+  .strong-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .strong-w{font-family:var(--serif);font-size:17.5px}
+  .strong-code{font-family:var(--mono);font-size:12px;color:var(--accent-ink);
+    border:1px solid var(--line);border-radius:4px;padding:1px 6px;background:var(--paper)}
+  .strong-code:hover{border-color:var(--accent)}
+  .strong-orig{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .strong-def{font-size:14px;line-height:1.75;color:#000;margin-top:5px}
+  html[data-theme="dark"] .strong-def{color:#fff}
+
+  /* 字彙分析（原文語序）：尺寸用 em，字級 A−/A/A+ 才會跟著縮放 */
+  .parse-lit{background:var(--hl);border-left:3px solid var(--accent);padding:.7em .95em;
+    margin:2px 0 .8em;line-height:1.85;white-space:pre-wrap;border-radius:0 6px 6px 0}
+  .parse-lit b{display:block;font-family:var(--sans);font-size:.78em;font-weight:600;
+    letter-spacing:.12em;color:var(--accent-ink);margin-bottom:.25em}
+  .parse-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 .35em}
+  .parse-tools button{font-family:var(--sans);font-size:.86em;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:2px 9px;background:var(--paper)}
+  .parse-tools button[aria-pressed="true"]{color:var(--accent-ink);border-color:var(--accent)}
+  .parse-list{display:flex;flex-direction:column}
+  .p-row{display:grid;grid-template-columns:20px 1fr;gap:9px;padding:.62em 8px;margin:0 -8px;
+    border-bottom:1px solid var(--line);border-radius:6px}
+  .p-row:last-child{border-bottom:0}
+  .p-row:hover{background:var(--hl)}
+  .p-row.func{opacity:.6}
+  .p-idx{font-size:.78em;color:var(--muted);padding-top:.28em;text-align:right}
+  .p-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .p-word{font-family:var(--serif);font-size:1.2em;line-height:1.5}
+  .p-meta{font-size:.86em;color:var(--muted)}
+  .p-orig{font-size:.9em;color:var(--accent-ink)}
+  .p-tr{font-family:var(--mono);font-size:.92em;color:var(--accent-ink);font-style:italic}
+  .p-ph{font-size:.82em;color:var(--muted)}
+  .p-zh{font-family:"PMingLiU","MingLiU","新細明體","Songti TC","Noto Serif TC",serif;
+        font-size:1.15em;color:var(--ink);
+        border:1px solid var(--line);border-radius:999px;padding:.05em .6em;white-space:nowrap}
+  /* 註解：依註釋書分塊 */
+  .note-src{border-top:1px solid var(--line);padding:.85em 0 .55em}
+  .note-src:first-child{border-top:0;padding-top:.2em}
+  .note-head{display:flex;align-items:baseline;gap:.5em;margin-bottom:.35em}
+  .note-head b{font-family:var(--sans);font-size:.95em;font-weight:600;color:var(--accent-ink)}
+  .note-lic{font-family:var(--sans);font-size:.76em;color:var(--muted);
+            border:1px solid var(--line);border-radius:999px;padding:0 .45em}
+  .note-p{margin:.55em 0;line-height:1.95}
+  .note-p.en{color:var(--muted)}
+  .note-en{margin:.4em 0 .1em}
+  .note-en>summary{font-family:var(--sans);font-size:.8em;color:var(--muted);cursor:pointer}
+  .note-en>summary:hover{color:var(--accent-ink)}
+  .note-whole{margin:.3em 0}
+  .note-whole>summary{font-family:var(--sans);font-size:.82em;color:var(--accent-ink);cursor:pointer;
+                      border:1px dashed var(--line);border-radius:6px;padding:.35em .6em}
+  .note-note{font-family:var(--sans);font-size:.78em;color:var(--muted);margin:.45em 0 .1em;line-height:1.6}  .p-def{font-size:1em;line-height:1.75;color:#000;margin-top:.2em}
+  html[data-theme="dark"] .p-def{color:#fff}
+  .parse-more{margin-top:.6em}
+
+  /* translations inside card */
+  details.tr{border:1px solid var(--line);border-radius:8px;margin:12px 0 0;background:var(--paper)}
+  details.tr>summary{list-style:none;cursor:pointer;padding:8px 11px;font-size:12px;color:var(--muted)}
+  details.tr>summary::-webkit-details-marker{display:none}
+  details.tr .t{padding:0 11px 11px;font-size:13px;line-height:1.75;color:var(--ink)}
+  details.tr .t+ .t{padding-top:0}
+  details.tr .t b{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--accent);
+    display:block;margin-bottom:2px}
+
+  /* xrefs */
+  .xrefs{display:flex;flex-direction:column;gap:2px;margin:-4px 0 4px}
+  .xref{display:grid;grid-template-columns:92px 1fr;gap:10px;text-align:left;padding:9px 8px;
+    margin:0 -8px;border-radius:7px;align-items:baseline}
+  .xref:hover{background:var(--hl)}
+  .xref-l{font-family:var(--mono);font-size:13px;color:var(--accent-ink);white-space:nowrap}
+  .xref-t{font-family:var(--serif);font-size:15px;line-height:1.75;color:var(--ink);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+  .chip{font-family:var(--mono);font-size:12.5px;padding:5px 10px;border:1px solid var(--line);
+    border-radius:999px;color:var(--muted);background:var(--paper)}
+  .chip:hover{color:var(--ink);border-color:var(--accent)}
+  .chips-label{font-size:11px;letter-spacing:.08em;color:var(--muted);margin:12px 0 0}
+
+  /* search results */
+  .hits{display:flex;flex-direction:column}
+  .hit{display:grid;grid-template-columns:78px 1fr;gap:10px;padding:9px 8px;margin:0 -8px;
+    border-radius:7px;text-align:left;align-items:baseline;border-bottom:1px solid var(--line)}
+  .hit:hover{background:var(--hl)}
+  .hit-l{font-family:var(--mono);font-size:11.5px;color:var(--accent-ink)}
+  .hit-t{font-family:var(--serif);font-size:13.5px;line-height:1.7;color:var(--ink)}
+  .hit-t mark{background:var(--hl);color:var(--accent-ink);padding:0 2px;border-radius:2px}
+
+  /* skeleton */
+  .sk{padding:22px}
+  .sk i{display:block;height:11px;border-radius:4px;background:var(--hl);margin:0 0 12px;
+    animation:pulse 1.3s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+
+  /* ---------- book dialog ---------- */
+  dialog{border:0;padding:0;background:var(--panel);color:var(--ink);
+    border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.22);width:min(760px,94vw);
+    max-height:82vh}
+  dialog::backdrop{background:rgba(20,18,14,.34)}
+  .nav-wrap{display:grid;grid-template-columns:250px 1fr;height:min(560px,76vh)}
+  .booklist{overflow-y:auto;border-right:1px solid var(--line);padding:12px;outline:none}
+  .booklist button{display:block;width:100%;text-align:left;padding:7px 10px;border-radius:7px;
+    font-size:13.5px;color:var(--muted)}
+  .booklist button:hover{background:var(--hl);color:var(--ink)}
+  .booklist button.on{background:var(--hl);color:var(--ink);font-weight:500}
+  .booklist .grp{font-size:10.5px;letter-spacing:.12em;color:var(--muted);padding:12px 10px 4px}
+  .chapbox{display:flex;flex-direction:column}
+  .chapbox header{height:auto;padding:16px 20px 10px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center}
+  .chapbox header b{font-family:var(--serif);font-size:17px;font-weight:400;letter-spacing:.05em}
+  .chapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:7px;
+    padding:16px 20px;overflow-y:auto}
+  .chapgrid button{padding:10px 0;border:1px solid var(--line);border-radius:7px;font-size:13px;
+    font-family:var(--mono);color:var(--muted)}
+  .chapgrid button:hover{border-color:var(--accent);color:var(--ink)}
+  .chapgrid button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  /* ---------- help dialog ---------- */
+  #helpDlg{width:min(720px,94vw)}
+  .help-wrap{display:flex;flex-direction:column;max-height:82vh}
+  .help-wrap header{height:auto;padding:16px 20px 12px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--panel)}
+  .help-wrap header b{font-family:var(--serif);font-size:17px;font-weight:400;letter-spacing:.05em}
+  .help-body{padding:6px 22px 26px;overflow-y:auto;font-family:var(--sans);font-size:13.5px;line-height:1.85}
+  .help-body h3{font-family:var(--sans);font-size:12px;letter-spacing:.14em;color:var(--muted);
+    font-weight:600;margin:22px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .help-body ol{margin:0;padding-left:1.4em}
+  .help-body ol li{margin:.35em 0}
+  .help-body dl{margin:0}
+  .help-body dt{font-weight:600;color:var(--accent-ink);margin-top:.7em}
+  .help-body dd{margin:.15em 0 0;color:var(--ink)}
+  .help-body code{font-family:var(--mono);font-size:.92em;background:var(--hl);padding:.1em .35em;border-radius:4px}
+  .help-body kbd{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:4px;padding:.05em .4em;margin-right:2px}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);
+    background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;
+    font-size:12.5px;opacity:0;pointer-events:none;transition:.2s;z-index:60}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- mobile ---------- */
+  @media (max-width: 900px){
+    header{height:auto;display:grid;grid-template-columns:auto auto 1fr auto;
+      grid-template-areas:"brand book tabs tools" "search search search search";
+      grid-template-rows:auto auto;row-gap:8px;padding:8px 12px 10px}
+    .brand{grid-area:brand}
+    .bookbtn{grid-area:book}
+    form.search{grid-area:search;max-width:none}
+    .tabs{grid-area:tabs;justify-self:end;margin-right:4px}
+    .tools{grid-area:tools;margin-left:0}
+    .brand small{display:none}
+    .brand{font-size:16px;letter-spacing:.1em}
+    form.search{max-width:none}
+    .toggle,.iconbtn[data-hide-mobile]{display:none}
+    main.app{display:block;height:auto}
+    .reader{overflow:visible}
+    .reader-inner{max-width:none;padding:22px 20px 88px}
+    .reader-head{margin:-22px 0 12px;padding:18px 0 10px}
+    .crumb{font-size:22px}
+    .zh{font-size:18px;line-height:1.9}
+    .study{display:none;position:fixed;inset:var(--header) 0 0;border-left:0;z-index:25;
+      background:var(--panel);overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .splitter{display:none}
+    body[data-view="study"] .study{display:block}
+    body[data-view="study"] .reader{display:none}
+    .tabs{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;
+      background:var(--panel);flex:none}
+    .tabs button{padding:6px 11px;font-size:12.5px;color:var(--muted)}
+    .tabs button.on{background:var(--hl);color:var(--ink)}
+    .tabs button+button{border-left:1px solid var(--line)}
+    dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}
+    .nav-wrap{grid-template-columns:1fr;height:100dvh}
+    .booklist{border-right:0;border-bottom:1px solid var(--line);max-height:42vh}
+    .chapgrid{grid-template-columns:repeat(auto-fill,minmax(44px,1fr))}
+    .card-head{padding:12px 16px 10px}
+    .card-body{padding:4px 16px 90px}
+    .xref{grid-template-columns:88px 1fr;gap:8px}
+    .hit{grid-template-columns:70px 1fr;gap:8px}
+    .toast{bottom:18px}
+  }
+</style>
+</head>
+<body data-view="reader">
+<header>
+  <div class="brand">查經<small>BIBLE</small></div>
+  <button class="bookbtn" id="bookBtn" aria-haspopup="dialog">
+    <b id="curBook">創世記</b><span id="curCh">1</span>
+  </button>
+  <form class="search" id="sf">
+    <select id="kind" aria-label="搜尋方式">
+      <option value="ref">經文</option>
+      <option value="grep">關鍵字</option>
+      <option value="word">原文詞</option>
+      <option value="strong">Strong</option>
+    </select>
+    <input id="q" placeholder="創1:1 · 約3:16-18 · 真理 · G2316" autocomplete="off" spellcheck="false" aria-label="查詢">
+    <button type="submit" aria-label="查詢">↵</button>
+  </form>
+  <div class="tabs" role="tablist">
+    <button data-view="reader" class="on">經文</button>
+    <button data-view="study">研讀</button>
+  </div>
+  <div class="tools">
+    <button class="toggle" id="enToggle" aria-pressed="false">EN</button>
+    <button class="helpbtn" id="helpBtn" aria-haspopup="dialog">Help</button>
+    <button class="iconbtn" id="themeBtn" aria-label="切換深色模式">◐</button>
+  </div>
+</header>
+
+<main class="app">
+  <section class="reader" id="reader">
+    <div class="reader-inner">
+      <div class="reader-head">
+        <div class="crumb"><em id="crumbSub">舊約 · 第 1 章</em><span id="crumbName">創世記</span></div>
+        <div class="chapnav">
+          <button id="prevCh" aria-label="上一章">←</button>
+          <span id="chPos">1 / 50</span>
+          <button id="nextCh" aria-label="下一章">→</button>
+        </div>
+      </div>
+      <div id="verses"></div>
+    </div>
+  </section>
+
+  <div class="splitter" id="splitter" role="separator" aria-orientation="vertical"
+       title="拖曳調整寬度 · 雙擊重設"></div>
+
+  <aside class="study" id="study">
+    <div class="study-empty" id="studyEmpty">
+      <h2>研讀</h2>
+      點左邊任一節，原文、Strong 字典、CBOL 與註解會出現在這裡。<br>
+      <kbd>↑</kbd><kbd>↓</kbd> 換節　<kbd>←</kbd><kbd>→</kbd> 換章　<kbd>/</kbd> 搜尋
+    </div>
+  </aside>
+</main>
+
+<dialog id="navDlg">
+  <div class="nav-wrap">
+    <div class="booklist" id="bookList"></div>
+    <div class="chapbox">
+      <header><b id="dlgBook">創世記</b><button class="iconbtn" id="dlgClose" aria-label="關閉">✕</button></header>
+      <div class="chapgrid" id="chapGrid"></div>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="helpDlg">
+  <div class="help-wrap">
+    <header><b>用法與名詞說明</b><button class="iconbtn" id="helpClose" aria-label="關閉">✕</button></header>
+    <div class="help-body">
+      <h3>怎麼用</h3>
+      <ol>
+        <li>左邊是經文，點任一節 → 右邊出現這一節的全部資料。</li>
+        <li>上方書卷＋章號（<b>創世記 2</b>）可跳書卷與章；<b>←</b> <b>→</b> 按鈕或鍵盤左右鍵換章。</li>
+        <li>搜尋列可打經文（<code>創1:1</code>、<code>約3:16-18</code>）、關鍵字（<b>真理</b>）、原文詞（<b>愛</b>）或 Strong 編號（<b>G2316</b>），記得左邊選對方式。</li>
+        <li><b>EN</b> 開關顯示或收起每節下面的 KJV、BSB、ASV 三種英文譯本。</li>
+        <li>右欄上方的 <b>A−</b> <b>A</b> <b>A+</b> 調整整體字級，選擇會記住。</li>
+        <li>桌面與平板橫向是左右雙欄，中間細線可左右拖動調寬度、雙擊重設；平板直立與手機改用上方「經文／研讀」分頁。</li>
+        <li>點串珠或經文參照裡的任何一節，會直接跳到該章該節並閃一下。</li>
+      </ol>
+
+      <h3>鍵盤</h3>
+      <p><kbd>↑</kbd> <kbd>↓</kbd> 換節　<kbd>←</kbd> <kbd>→</kbd> 換章　<kbd>/</kbd> 移到搜尋　<kbd>Esc</kbd> 關閉面板或對話框</p>
+
+      <h3>原文字彙分析</h3>
+      <p>按原文語序列出這一節的每一個字，欄位意思如下：</p>
+      <dl>
+        <dt>和合本用詞（左邊圈起來的字）</dt>
+        <dd>這個原文字在和合本裡被譯成什麼（例：<b>אֱלֹהִים</b> → 神）。所以同一個字在不同節可能有不同譯法。</dd>
+        <dt>原文</dt>
+        <dd>希臘文或希伯來文的原字形（聖經原文）。</dd>
+        <dt>Strong 編號（H／G 加數字）</dt>
+        <dd>Strong 是 19 世紀 James Strong 為聖經每個原文字編的號碼，同一個字共用一個號碼，所以不必懂原文也能查。
+          <b>H</b> 開頭是希伯來文（舊約，如 H430），<b>G</b> 開頭是希臘文（新約，如 G2316）。
+          點號碼可列出這個字在整本聖經出現的每一節，用來比對同一字在不同上下文的意思。</dd>
+        <dt>英文音譯（斜體，如 <i>'elohiym</i>）</dt>
+        <dd>把原文用英文字母拼出來，方便讀與查字典。</dd>
+        <dt>［音標］</dt>
+        <dd>Strong 字典的標音寫法，如 ［e-lo:-hi:m'］，重音在 <b>'</b> 那一音節，<b>:</b> 表示長音。</dd>
+        <dt>詞性、字形（如 名詞，陽性複數／動詞，Qal 完成式 3 單陽）</dt>
+        <dd>這個字在這裡的文法身分。<b>Qal、Pi'el、Hif'il</b> 是希伯來文的動詞型態，<b>主動／被動、直說語氣、分詞、主格單數陰性</b> 等是希臘文的變化。</dd>
+        <dt>原型</dt>
+        <dd>字典收錄的那個字（原形）。經文裡的字常是變化過的，查字典要用原型。</dd>
+        <dt>字義</dt>
+        <dd>該字在字典裡的主要義項，取前幾項，不是逐字對譯。</dd>
+        <dt>原文直譯</dt>
+        <dd>照原文語序直譯的一句話，用來對照和合本怎麼調整語序。</dd>
+        <dt>虛字</dt>
+        <dd>冠詞、受詞記號這類沒有獨立意思的小字，預設收起，可按「顯示虛字」展開。</dd>
+      </dl>
+
+      <h3>其他區塊</h3>
+      <dl>
+        <dt>CBOL 註解重點</dt>
+        <dd>信望愛站的中文註解（含原文編號、字義、經文參照）。分層大綱、◎、● 已整理成可讀的層級，經文參照可點。</dd>
+        <dt>註解</dt>
+        <dd>各本英文註釋書（公有領域，另有 Tyndale，CC BY-SA 4.0）。每本一則，先給中文譯本，<b>English 原文</b> 可展開；標籤顯示這一則涵蓋哪幾節，涵蓋整章的超長註解收在「展開整章註解」。</dd>
+        <dt>串珠</dt>
+        <dd>與本節相關的其他經文（信望愛串珠），點一下跳過去。</dd>
+      </dl>
+
+      <h3>資料與版權</h3>
+      <p>經文：和合本與 KJV／BSB／ASV；原文編號與字典、CBOL 註解、串珠來自信望愛站（bible.fhl.net）；註釋書為公有領域或 CC BY-SA 4.0。<b>僅供個人研讀使用，請勿再散布。</b>資料全部存在本機，斷網也能用；只有「原文字彙分析」第一次看某節時需要連線，之後自動離線快取。</p>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const OLD = new Set('GEN EXO LEV NUM DEU JOS JDG RUT 1SA 2SA 1KI 2KI 1CH 2CH EZR NEH EST JOB PSA PRO ECC SNG ISA JER LAM EZK DAN HOS JOL AMO OBA JON MIC NAM HAB ZEP HAG ZEC MAL'.split(' '));
+
+const state = {
+  books: [], book: null, ch: 1, sel: null,
+  showEn: localStorage.getItem('bible.en') === '1',
+  data: null, view: 'reader', lastStudy: null,
+};
+const chapterCache = new Map();
+const studyCache = new Map();
+const refName = (code, ch, v) => {
+  const b = state.books.find(x => x.usfm === code);
+  return `${b ? b.name : code} ${ch}${v ? ':' + v : ''}`;
+};
+
+/* ---------------- markdown ---------------- */
+function inline(s){
+  return esc(s)
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\b((?:[HG]\d{2,5}))\b/g,'<span class="sn">$1</span>');
+}
+function md2html(md){
+  const lines = String(md).split('\n');
+  const out = []; let i = 0, list = false;
+  const close = () => { if(list){ out.push('</ul>'); list = false; } };
+  while(i < lines.length){
+    const l = lines[i];
+    if(/^\|/.test(l) && /^\|[-: |]+\|?\s*$/.test(lines[i+1] || '')){
+      const rows = [];
+      while(i < lines.length && /^\|/.test(lines[i])){ rows.push(lines[i]); i++; }
+      const cells = r => r.replace(/^\||\|$/g,'').split('|').map(x=>x.trim());
+      const head = cells(rows[0]).map(c=>`<th>${inline(c)}</th>`).join('');
+      let t = `<table><thead><tr>${head}</tr></thead><tbody>`;
+      for(const r of rows.slice(2)) t += `<tr>${cells(r).map(c=>`<td>${inline(c)}</td>`).join('')}</tr>`;
+      out.push(t + '</tbody></table>'); continue;
+    }
+    if(/^###\s+/.test(l)){ close(); out.push(`<h3>${inline(l.replace(/^###\s+/,''))}</h3>`); i++; continue; }
+    if(/^##\s+/.test(l)){ close(); out.push(`<h3>${inline(l.replace(/^##\s+/,''))}</h3>`); i++; continue; }
+    if(/^\s*[-*]\s+/.test(l)){
+      if(!list){ out.push('<ul>'); list = true; }
+      out.push(`<li>${inline(l.replace(/^\s*[-*]\s+/,''))}</li>`); i++; continue;
+    }
+    if(!l.trim()){ close(); i++; continue; }
+    close(); out.push(`<p>${inline(l)}</p>`); i++;
+  }
+  close();
+  return out.join('\n');
+}
+
+/* ---------------- CBOL 大綱式註解 → 分層排版 ---------------- */
+const CBOL_ABBR = "創 出 利 民 申 書 士 得 撒上 撒下 王上 王下 代上 代下 拉 尼 斯 伯 詩 箴 傳 歌 賽 耶 哀 結 但 何 珥 摩 俄 拿 彌 鴻 哈 番 該 亞 瑪 太 可 路 約 徒 羅 林前 林後 加 弗 腓 西 帖前 帖後 提前 提後 多 門 來 雅 彼前 彼後 約一 約二 約三 猶 啟".split(/\s+/);
+const CBOL_CODE = "GEN EXO LEV NUM DEU JOS JDG RUT 1SA 2SA 1KI 2KI 1CH 2CH EZR NEH EST JOB PSA PRO ECC SNG ISA JER LAM EZK DAN HOS JOL AMO OBA JON MIC NAM HAB ZEP HAG ZEC MAL MAT MRK LUK JHN ACT ROM 1CO 2CO GAL EPH PHP COL 1TH 2TH 1TI 2TI TIT PHM HEB JAS 1PE 2PE 1JN 2JN 3JN JUD REV".split(/\s+/);
+const CBOL_A2C = {};
+CBOL_ABBR.forEach((a, i) => { CBOL_A2C[a] = CBOL_CODE[i]; });
+
+/* PDF 抽出來的斷行與空白整頓 */
+function cbolClean(s){
+  return String(s).replace(/\s+/g, ' ')
+    .replace(/\s+([，。；：、！？）】》」])/g, '$1')
+    .replace(/([（【《「])\s+/g, '$1')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')');
+}
+
+/* 「書 24:29-31」→ 可點的經文連結 */
+function cbolRefs(s){
+  return esc(s).replace(/([一-鿿]{1,3})\s*(\d+)\s*[:：]\s*(\d+)(?:\s*-\s*(\d+))?/g,
+    (m, tok, ch, v, v2) => {
+      for(let k = 1; k <= tok.length; k++){
+        const t = tok.slice(tok.length - k);
+        const code = CBOL_A2C[t];
+        if(code){
+          const head = tok.slice(0, tok.length - k);
+          return head + `<a class="ref" href="#" data-code="${code}" data-ch="${ch}" data-v="${v}">`
+            + `${t} ${ch}:${v}${v2 ? '-' + v2 : ''}</a>`;
+        }
+      }
+      return m;
+    });
+}
+
+function cbol2html(md){
+  const lines = String(md).split('\n').map(l => l.replace(/[ \t]+$/, ''));
+  const kindOf = t => {
+    if(/^[壹貳貮叁參叄肆伍陸柒捌玖拾]+、/.test(t)) return 'l1';
+    if(/^[（(][一二三四五六七八九十]+[）)]/.test(t)) return 'l3';
+    if(/^[一二三四五六七八九十]+、/.test(t)) return 'l2';
+    if(/^\d+[.、]/.test(t)) return 'pt';
+    if(/^[◎●]/.test(t)) return 'note';
+    return null;
+  };
+  const blocks = [];
+  let sawL1 = false, afterBlank = false;
+  const push = (kind, text) => {
+    if(kind === 'l2' && !sawL1) kind = 'l1';
+    if(kind === 'l3' && !sawL1) kind = 'l2';
+    if(kind === 'l1') sawL1 = true;
+    blocks.push({kind, text});
+  };
+  for(const line of lines){
+    const t = line.trim();
+    if(!t){ afterBlank = true; continue; }
+    const kind = kindOf(t);
+    if(kind){ push(kind, t); afterBlank = false; continue; }
+    // 沒有標記的行：併回上一段（消除 PDF 硬換行）
+    if(blocks.length && !afterBlank){
+      blocks[blocks.length - 1].text += t;
+    }else{
+      push('p', t);
+    }
+    afterBlank = false;
+  }
+  const tailRange = txt => {
+    const m = txt.match(/^(.*?(?:[。」）]))\s+(\d+:\d+(?:-\d+(?::\d+)?)?)$/);
+    if(!m) return cbolRefs(txt);
+    return cbolRefs(m[1]) + `<span class="cb-range">${esc(m[2])}</span>`;
+  };
+  const out = blocks.map(b => {
+    const txt = cbolClean(b.text);
+    if(b.kind === 'pt'){
+      const m = txt.match(/^(\d+[.、])\s*(.*)$/s);
+      return `<p class="cb-p"><span class="cb-n">${esc(m[1])}</span>${tailRange(m[2])}</p>`;
+    }
+    if(b.kind === 'note'){
+      const hi = /^[●]/.test(txt);
+      const m = txt.match(/^([◎●])\s*(.*)$/s);
+      const cls = hi ? 'cb-hi' : 'cb-note';
+      const body = cbolRefs(m[2]).replace(/^(「[^」]{1,30}」)/, '<strong class="cb-q">$1</strong>');
+      return `<div class="${cls}"><span class="cb-m">${esc(m[1])}</span>${body}</div>`;
+    }
+    if(b.kind === 'l1' || b.kind === 'l2' || b.kind === 'l3'){
+      const m = txt.match(/^(.*?)(?:\s+)(\d+:\d+(?:-\d+(?::\d+)?)?)$/);
+      let body = m ? m[1] : txt, rangeTxt = m ? m[2] : '';
+      if(m){
+        const bk = body.match(/\s([一-鿿]{1,3})$/);
+        if(bk && CBOL_A2C[bk[1]]){
+          body = body.slice(0, body.length - bk[0].length);
+          rangeTxt = bk[1] + ' ' + rangeTxt;
+        }
+      }
+      const range = rangeTxt ? `<span class="cb-range">${esc(rangeTxt)}</span>` : '';
+      return `<div class="cb-${b.kind}">${cbolRefs(body)}${range}</div>`;
+    }
+    return `<p class="cb-p">${tailRange(txt)}</p>`;
+  });
+  return `<div class="cbol">${out.join('\n')}</div>`;
+}
+
+/* ---------------- api ---------------- */
+async function api(path){
+  const r = await fetch(path, {cache:'no-store'});
+  const j = await r.json().catch(()=>({error:r.statusText}));
+  if(!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+/* ---------------- routing ---------------- */
+function setHash(code, ch, v, mode){
+  const h = `#/${code}/${ch}${v ? '/' + v : ''}`;
+  if(location.hash === h) return;
+  if(mode === 'replace') history.replaceState(null, '', h);
+  else location.hash = h;
+}
+function parseHash(){
+  const m = location.hash.match(/^#\/([0-9A-Z]{3})\/(\d+)(?:\/(\d+))?/);
+  if(!m) return null;
+  return {code:m[1], ch:+m[2], v:m[3] ? +m[3] : null};
+}
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  if(state.showEn) $('#enToggle').setAttribute('aria-pressed','true');
+  const { books } = await api('/api/books');
+  state.books = books;
+  const h = parseHash();
+  const code = (h && books.some(b=>b.usfm===h.code)) ? h.code : 'GEN';
+  state.book = books.find(b=>b.usfm===code);
+  bindUI();
+  await openChapter(code, h ? h.ch : 1, h ? h.v : null, {silent:true});
+}
+function bindUI(){
+  $('#sf').onsubmit = onSearch;
+  $('#bookBtn').onclick = openNav;
+  $('#dlgClose').onclick = () => $('#navDlg').close();
+  $('#helpBtn').onclick = () => $('#helpDlg').showModal();
+  $('#helpClose').onclick = () => $('#helpDlg').close();
+  $('#helpDlg').onclick = e => { if(e.target === $('#helpDlg')) $('#helpDlg').close(); };
+  $('#prevCh').onclick = () => gotoChapter(state.ch - 1);
+  $('#nextCh').onclick = () => gotoChapter(state.ch + 1);
+  $('#enToggle').onclick = e => {
+    state.showEn = !state.showEn;
+    localStorage.setItem('bible.en', state.showEn ? '1' : '0');
+    e.currentTarget.setAttribute('aria-pressed', state.showEn ? 'true' : 'false');
+    if(state.data) renderVerses(state.data);
+  };
+  $('#themeBtn').onclick = () => {
+    const cur = document.documentElement.dataset.theme ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('bible.theme', next);
+  };
+  if(localStorage.getItem('bible.theme'))
+    document.documentElement.dataset.theme = localStorage.getItem('bible.theme');
+  $$('.tabs button').forEach(b => b.onclick = () => setView(b.dataset.view));
+  const syncHeader = () => document.documentElement.style.setProperty(
+    '--header', document.querySelector('header').offsetHeight + 'px');
+  syncHeader();
+  addEventListener('resize', syncHeader);
+  addEventListener('resize', () => setSplit(splitWidth()));
+  initSplitter();
+  window.addEventListener('keydown', onKey);
+  window.addEventListener('hashchange', async () => {
+    const h = parseHash();
+    if(!h) return;
+    if(h.code !== state.book.usfm || h.ch !== state.ch){
+      await openChapter(h.code, h.ch, h.v, {silent:true, fromHash:true});
+    } else if(h.v && h.v !== state.sel){
+      selectVerse(h.v, {scroll:true});
+    }
+  });
+}
+function setView(v){
+  state.view = v;
+  document.body.dataset.view = v;
+  $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  if(v === 'reader'){
+    setHash(state.book.usfm, state.ch, state.sel, 'replace');
+  }
+}
+
+/* ---------------- chapter ---------------- */
+async function gotoChapter(ch){
+  if(ch < 1 || ch > state.book.nch) return;
+  await openChapter(state.book.usfm, ch, null);
+}
+async function openChapter(code, ch, v, opts = {}){
+  const b = state.books.find(x=>x.usfm===code);
+  if(!b) return;
+  state.book = b; state.ch = ch; state.sel = v || null;
+  $('#curBook').textContent = b.name;
+  $('#curCh').textContent = ch;
+  $('#crumbName').textContent = b.name;
+  $('#crumbSub').textContent = `${OLD.has(code) ? '舊約' : '新約'} · 第 ${ch} 章`;
+  $('#chPos').textContent = `${ch} / ${b.nch}`;
+  $('#prevCh').disabled = ch <= 1;
+  $('#nextCh').disabled = ch >= b.nch;
+  if(!opts.fromHash) setHash(code, ch, v, opts.silent ? 'replace' : 'push');
+
+  const key = `${code}/${ch}`;
+  let data = chapterCache.get(key);
+  $('#verses').innerHTML = skeleton(6);
+  if(!data){
+    try{
+      data = await api(`/api/chapter?code=${code}&ch=${ch}`);
+      chapterCache.set(key, data);
+    }catch(e){
+      $('#verses').innerHTML = `<p style="color:var(--muted)">載入失敗：${esc(e.message)}</p>`;
+      return;
+    }
+  }
+  state.data = data;
+  renderVerses(data);
+  $('#reader').scrollTo({top:0, behavior: opts.silent ? 'auto' : 'smooth'});
+  if(v) selectVerse(v, {scroll:true, silent:true});
+  else if(opts.silent) { /* keep study pane as-is */ }
+  else { setView('reader'); }
+}
+function skeleton(n){
+  return `<div class="sk">${'<i></i>'.repeat(n)}</div>`;
+}
+function renderVerses(data){
+  const en = state.showEn;
+  $('#verses').innerHTML = data.verses.map(v => `
+    <div class="verse${state.sel === v.v ? ' sel' : ''}" data-v="${v.v}" id="v${v.v}" tabindex="0">
+      <div class="vn">${v.v}</div>
+      <div class="zh">${esc(v.zh)}</div>
+      ${en ? `<div class="en">${['KJV','BSB','ASV'].filter(k=>v.en[k])
+        .map(k=>`<div><b>${k}</b>${esc(v.en[k])}</div>`).join('')}</div>` : ''}
+    </div>`).join('');
+  $$('#verses .verse').forEach(el => {
+    el.onclick = () => selectVerse(+el.dataset.v);
+    el.onkeydown = ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); selectVerse(+el.dataset.v); } };
+  });
+}
+
+/* ---------------- verse → study ---------------- */
+async function selectVerse(v, opts = {}){
+  state.sel = v;
+  $$('#verses .verse').forEach(el => el.classList.toggle('sel', +el.dataset.v === v));
+  if(opts.scroll){
+    const el = document.getElementById('v' + v);
+    if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
+  }
+  setHash(state.book.usfm, state.ch, v, 'replace');
+  if(state.view === 'study' || innerWidth <= 900) setView('study');
+  await loadStudy(state.book.name + ' ' + state.ch + ':' + v);
+}
+async function loadStudy(ref){
+  $('#study').innerHTML = skeleton(7);
+  try{
+    let data = studyCache.get(ref);
+    if(!data){
+      data = await api(`/api/study?ref=${encodeURIComponent(ref)}`);
+      studyCache.set(ref, data);
+    }
+    renderStudy(data);
+  }catch(e){
+    $('#study').innerHTML = `<div class="study-empty">查詢失敗：${esc(e.message)}</div>`;
+  }
+}
+function renderStudy(d){
+  strongZhMap = {};
+  const lead = (d.translations || []).find(t => /和合/.test(t.label));
+  const others = (d.translations || []).filter(t => t !== lead);
+  const xr = d.xrefs || [];
+  const xs = xr.filter(x => !x.rest);
+  const rest = xr.filter(x => x.rest);
+
+  let html = `<div class="card-head">
+    <div class="row">
+      <div class="card-ref">${esc(d.title || d.ref)}</div>
+      <div class="card-actions">
+        <button id="copyLink" aria-label="複製連結" title="複製連結">⧉</button>
+        <button id="closeCard" aria-label="關閉" title="關閉">✕</button>
+        <div class="font-size-control">
+          <button class="font-size-btn fs1" title="小字級" aria-label="小字級">A−</button>
+          <button class="font-size-btn fs2 active" title="中字級" aria-label="中字級">A</button>
+          <button class="font-size-btn fs3" title="大字級" aria-label="大字級">A+</button>
+        </div>
+      </div>
+    </div>
+    ${lead ? `<p class="card-lead">${esc(lead.text)}</p>` : ''}
+    ${others.length ? `<details class="tr"><summary>其他譯本 ${others.length}</summary>
+      ${others.map(t=>`<div class="t"><b>${esc(t.label)}</b>${esc(t.text)}</div>`).join('')}</details>` : ''}
+  </div><div class="card-body">`;
+
+  // 中文／英文註解改由 /api/notes 直接讀（每則同時有中英），這裡只留位置
+let hasZhCom = false, hasEnCom = false;
+for(const s of (d.sections || [])){
+    const title = s.title || '';
+    if(title.startsWith('中文註解')){ hasZhCom = true; continue; }
+    if(title.startsWith('英文註解')){ hasEnCom = true; continue; }
+    const strong = /原文字詞/.test(title);
+    if(strong){
+      // 原文字彙分析（附「和合本用詞」）；舊的「字詞對照」表已不顯示
+      strongZhMap = zhByStrong(s.body);
+      html += `<details class="sec parse-sec" open>
+        <summary>原文字彙分析<span class="count">原文語序 · 附和合本用詞</span></summary>
+        <div class="sec-body" id="parseBody">${skeleton(4)}</div>
+      </details>`;
+      continue;
+    }
+    const open = /CBOL/.test(title);
+    html += `<details class="sec"${open ? ' open' : ''}>
+      <summary>${esc(title)}</summary>
+      <div class="sec-body md">${/^CBOL/.test(title) ? cbol2html(s.body) : md2html(s.body)}</div>
+    </details>`;
+  }
+  // 註解：按註釋書分塊（每則中英並存，英文可展開）
+  if(hasEnCom || hasZhCom){
+    html += `<details class="sec" open>
+      <summary>註解<span class="count" id="noteCount">…</span></summary>
+      <div class="sec-body" id="noteBody">${skeleton(3)}</div>
+    </details>`;
+  }
+  if(xr.length){
+    html += `<details class="sec" open><summary>串珠 <span class="count">${xr.length}</span></summary>
+      <div class="sec-body">
+        <div class="xrefs">
+          ${xs.map(x=>`<button class="xref" data-code="${x.code}" data-ch="${x.ch}" data-v="${x.v}">
+            <span class="xref-l">${esc(x.label)}</span>
+            <span class="xref-t">${esc(x.text)}</span></button>`).join('')}
+        </div>
+        ${rest.length ? `<div class="chips-label">其餘</div><div class="chips">
+          ${rest.map(x=>`<button class="chip" data-code="${x.code}" data-ch="${x.ch}" data-v="${x.v}">${esc(x.label)}</button>`).join('')}
+        </div>` : ''}
+      </div></details>`;
+  }
+  html += '</div>';
+  $('#study').innerHTML = html;
+  $('#study').scrollTop = 0;
+  applyFS(fsIndex);
+  $('#closeCard').onclick = () => {
+    setView('reader');
+    state.sel = null;
+    $$('#verses .verse').forEach(el => el.classList.remove('sel'));
+    setHash(state.book.usfm, state.ch, null, 'replace');
+  };
+  $('#copyLink').onclick = async () => {
+    const url = location.href;
+    try{ await navigator.clipboard.writeText(url); toast('已複製連結'); }
+    catch{ toast(url); }
+  };
+  $$('#study .xref, #study .chip').forEach(b => b.onclick = () => {
+    gotoRef(b.dataset.code, +b.dataset.ch, +b.dataset.v);
+  });
+  $$('#study a.ref').forEach(a => a.onclick = (e) => {
+    e.preventDefault();
+    gotoRef(a.dataset.code, +a.dataset.ch, +a.dataset.v);
+  });
+  $$('#study .strong-code').forEach(b => b.onclick = () => runSearch('strong', b.dataset.code));
+  if($('#parseBody')) loadParsing(state.book.usfm, state.ch, state.sel);
+  if($('#noteBody')) loadNotes(state.book.usfm, state.ch, state.sel);
+}
+
+
+/* ---------------- 字彙分析（原文語序） ---------------- */
+const parseCache = new Map();
+let showFunc = localStorage.getItem('bible.func') === '1';
+
+async function loadParsing(code, ch, v){
+  const slot = $('#parseBody');
+  if(!slot || !code || !v) return;
+  const key = `${code}/${ch}/${v}`;
+  let p = parseCache.get(key);
+  if(!p){
+    try{ p = await api(`/api/parsing?code=${code}&ch=${ch}&v=${v}`); }
+    catch(e){ p = {ok:false, error:e.message}; }
+    if(p && p.ok) parseCache.set(key, p);
+  }
+  if(!slot.isConnected) return;   // 使用者已換節
+  if(!p || !p.ok){
+    slot.innerHTML = `<p style="color:var(--muted);font-family:var(--sans);font-size:13px">
+      ${esc((p && p.error) || '沒有字彙分析資料')}　—　下面「字詞對照」仍可用。</p>`;
+    return;
+  }
+  paintParsing(p);
+}
+
+function paintParsing(p){
+  const slot = $('#parseBody');
+  const rows = p.rows || [];
+  const funcN = rows.filter(r => r.func).length;
+  const shown = rows.filter(r => showFunc || !r.func);
+  const list = shown.map((r, i) => {
+    const zh = (strongZhMap[r.sn] || []).join(' · ');
+    return `<div class="p-row${r.func ? ' func' : ''}">
+      <div class="p-idx">${i + 1}</div>
+      <div>
+        <div class="p-head">
+          ${zh ? `<span class="p-zh" title="和合本用詞">${esc(zh)}</span>` : ''}
+          <span class="p-word">${esc(r.word)}</span>
+          ${r.sn ? `<button class="strong-code" data-code="${r.sn}" title="查 ${r.sn} 全部出處">${r.sn}</button>` : ''}
+          ${r.tr ? `<span class="p-tr" title="英文音譯${r.ph ? '／音標 ' + esc(r.ph) : ''}">${esc(r.tr)}</span>` : ''}
+          ${r.ph && r.ph !== r.tr ? `<span class="p-ph">［${esc(r.ph)}］</span>` : ''}
+          ${r.pro ? `<span class="p-meta">${esc(r.pro)}</span>` : ''}
+          ${r.orig && r.orig !== r.word ? `<span class="p-orig">原型 ${esc(r.orig)}</span>` : ''}
+        </div>
+        ${r.wform ? `<div class="p-meta">${esc(r.wform)}</div>` : ''}
+        ${r.exp ? `<div class="p-def">${esc(r.exp)}</div>` : ''}
+        ${r.remark ? `<div class="p-meta">註：${esc(r.remark)}</div>` : ''}
+      </div></div>`;
+  }).join('');
+  slot.innerHTML = `
+    ${p.literal ? `<div class="parse-lit"><b>原文直譯</b>${esc(p.literal)}</div>` : ''}
+    <div class="parse-tools">
+      ${funcN ? `<button id="parseFuncBtn" aria-pressed="${showFunc}" title="冠詞、受詞記號等虛字">${showFunc ? '隱藏' : '顯示'}虛字 (${funcN})</button>` : ''}
+      <span class="p-meta">${p.is_ot ? '希伯來文' : '希臘文'} · 共 ${rows.length} 字${p.source === 'live' ? ' · 已存本機快取' : ''}</span>
+    </div>
+    <div class="parse-list">${list}</div>`;
+  const btn = $('#parseFuncBtn');
+  if(btn) btn.onclick = () => {
+    showFunc = !showFunc;
+    localStorage.setItem('bible.func', showFunc ? '1' : '0');
+    paintParsing(p);
+  };
+  $$('#parseBody .strong-code').forEach(b => b.onclick = () => runSearch('strong', b.dataset.code));
+}
+
+/* 原文字詞表 → 窄欄好讀的卡片列 */
+/* 把「字詞對照」表轉成 Strong → 和合本用詞 的對應，供原文字彙分析顯示 */
+let strongZhMap = {};
+function zhByStrong(body){
+  const map = {};
+  const rows = String(body).split('\n').filter(l => /^\|/.test(l.trim()));
+  const cells = r => r.trim().replace(/^\||\|$/g,'').split('|').map(x=>x.trim());
+  for(const r of rows.slice(2)){
+    const c = cells(r);
+    if(c.length < 2) continue;
+    const code = (c[1] || '').replace(/<[^>]+>/g,'').trim();
+    if(!/^[GH]\d+$/.test(code)) continue;
+    const zh = (c[0] || '').replace(/[「」『』]/g,'').trim();
+    if(!zh) continue;
+    (map[code] = map[code] || []);
+    if(!map[code].includes(zh)) map[code].push(zh);
+  }
+  return map;
+}
+
+/* ---------------- 註解：依註釋書分塊 ---------------- */
+/* Henry 的原文被拆成一塊塊短句，接回可讀的段落；數字／羅馬數字標號另起一段 */
+function joinFrags(items){
+  const paras = [];
+  let buf = '';
+  const marker = s => /^(\d+\.|[IVX]+\.|Observe,\s*\d+\.?|Here we have,\s*[IVX]+\.?|Now\s+[IVX]+\.?)$/.test(s.trim());
+  for(const it of items){
+    const t = (it.en || '').trim();
+    if(!t) continue;
+    const zt = (it.zh || '').trim();
+    if(marker(t)){ if(buf) paras.push(buf); buf = t; continue; }
+    buf = buf ? buf + ' ' + t : t;
+    if(zt){ paras.push(buf); buf = ''; }
+  }
+  if(buf) paras.push(buf);
+  return paras;
+}
+/* 中文譯本原文常被硬換行切斷，接回完整句子 */
+function mergeZhParas(paras){
+  const out = [];
+  let buf = '';
+  for(const p of paras){
+    const t = String(p).trim();
+    if(!t) continue;
+    const startNew = /^(\d+\.|[①-⑳]|（[一二三四五六七八九十]+）|[一二三四五六七八九十]+、|[A-Z][a-z]{1,2}\s?\d)/.test(t);
+    if(t.length <= 28 && !/[。！？：，、；]$/.test(t)){
+      if(buf) out.push(buf);
+      out.push(t); buf = '';
+      continue;
+    }
+    if(buf && (startNew || /[。！？]$/.test(buf))){ out.push(buf); buf = t; }
+    else buf = buf ? buf + t : t;
+  }
+  if(buf) out.push(buf);
+  return out;
+}
+
+/* 註解：由 /api/notes 取得（每則同時有中文與英文原文） */
+const noteCache = new Map();
+
+async function loadNotes(code, ch, v){
+  const slot = $('#noteBody');
+  if(!slot || !code || !v) return;
+  const key = `${code}/${ch}/${v}`;
+  let d = noteCache.get(key);
+  if(!d){
+    try{ d = await api(`/api/notes?code=${code}&ch=${ch}&v=${v}`); }
+    catch(e){ d = {ok:false, error:e.message}; }
+    if(d && d.ok) noteCache.set(key, d);
+  }
+  if(!slot.isConnected) return;
+  if(!d || !d.ok){
+    slot.innerHTML = `<p class="note-note">${esc((d && d.error) || '註解讀取失敗')}</p>`;
+    return;
+  }
+  paintNotes(d);
+}
+
+function paintNotes(d){
+  const slot = $('#noteBody');
+  const srcs = (d && d.sources) || [];
+  const cnt = $('#noteCount');
+  if(!srcs.length){
+    slot.innerHTML = '<p class="note-note">本機沒有這一節的註解。</p>';
+    if(cnt) cnt.textContent = '0 本';
+    return;
+  }
+  if(cnt) cnt.textContent = srcs.length + ' 本';
+  slot.innerHTML = srcs.map(renderNoteSrc).join('');
+}
+
+function lines(text){
+  return String(text || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+}
+
+function renderNoteSrc(s){
+  const enP = joinFrags(lines(s.en).map(t => ({ en: t })));
+  const zhP = mergeZhParas(lines(s.zh));
+  const vs = s.verses || [];
+  let tag = '';
+  if(s.range) tag = `<span class="note-lic">${esc(s.range)}</span>`;
+  else if(s.whole && vs.length) tag = `<span class="note-lic">整章 ${vs[0]}–${vs[vs.length - 1]} 節</span>`;
+  else if(vs.length > 1) tag = `<span class="note-lic">${vs[0]}–${vs[vs.length - 1]} 節</span>`;
+
+  const enHtml = enP.length
+    ? enP.map(p => `<p class="note-p en">${esc(p)}</p>`).join('')
+    : '';
+  let body = '';
+  if(zhP.length){
+    body = zhP.map(p => `<p class="note-p">${esc(p)}</p>`).join('');
+    if(enP.length){
+      body += `<details class="note-en"><summary>English 原文 · ${enP.length} 段</summary>${enHtml}</details>
+        <p class="note-note">中文為該註釋書的中文譯本，非逐句對譯；以英文原文為準。</p>`;
+    }
+  }else{
+    body = enHtml;
+  }
+  if(s.whole && vs.length){
+    body = `<details class="note-whole"><summary>展開整章註解（${vs[0]}–${vs[vs.length - 1]} 節）</summary>${body}</details>`;
+  }
+  return `<div class="note-src">
+    <div class="note-head"><b>${esc(s.name)}</b>${s.lic ? `<span class="note-lic">${esc(s.lic)}</span>` : ''}${tag}</div>
+    ${body}</div>`;
+}
+
+function renderStrong(body){
+  const rows = String(body).split('\n').filter(l => /^\|/.test(l.trim()));
+  if(rows.length < 3) return md2html(body);
+  const cells = r => r.trim().replace(/^\||\|$/g,'').split('|').map(x=>x.trim());
+  const out = rows.slice(2).map(r => {
+    const c = cells(r);
+    if(c.length < 4) return '';
+    const code = (c[1] || '').replace(/<[^>]+>/g,'').trim();
+    const isStrong = /^[GH]\d+$/.test(code);
+    return `<div class="strong-row">
+      <div class="strong-head">
+        <span class="strong-w">${esc(c[0])}</span>
+        ${isStrong ? `<button class="strong-code" data-code="${code}" title="查 ${code} 全部出處">${code}</button>` : `<span class="strong-code">${esc(code)}</span>`}
+        <span class="strong-orig">${esc(c[2])}</span>
+      </div>
+      <div class="strong-def">${esc(c[3])}</div>
+    </div>`;
+  }).join('');
+  return `<div class="strong-list">${out}</div>`;
+}
+
+/* ---------------- cross reference / hit navigation ---------------- */
+async function gotoRef(code, ch, v){
+  if(code === state.book.usfm && ch === state.ch){
+    if(v) await selectVerse(v, {scroll:true});
+    return;
+  }
+  await openChapter(code, ch, v || null, {silent:true});
+  if(v && innerWidth <= 900) setView('reader');
+  if(!v){ setView('reader'); return; }
+  const el = document.getElementById('v' + v);
+  if(el){
+    el.scrollIntoView({block:'center'});
+    el.classList.add('flash');
+    setTimeout(()=>el.classList.remove('flash'), 1700);
+  }
+}
+
+/* ---------------- book / chapter dialog ---------------- */
+function openNav(){
+  const list = $('#bookList');
+  let html = '', lastTest = null;
+  for(const b of state.books){
+    const test = OLD.has(b.usfm) ? 'old' : 'new';
+    if(test !== lastTest){
+      html += `<div class="grp">${test === 'old' ? '舊約' : '新約'}</div>`;
+      lastTest = test;
+    }
+    html += `<button data-code="${b.usfm}" class="${b.usfm === state.book.usfm ? 'on' : ''}">${esc(b.name)}</button>`;
+  }
+  list.innerHTML = html;
+  $$('#bookList button').forEach(btn => btn.onclick = () => {
+    const b = state.books.find(x=>x.usfm === btn.dataset.code);
+    $$('#bookList button').forEach(x=>x.classList.toggle('on', x === btn));
+    $('#dlgBook').textContent = b.name;
+    renderChapGrid(b, 1);
+  });
+  renderChapGrid(state.book, state.ch);
+  $('#navDlg').showModal();
+  const cur = $('#bookList button.on');
+  if(cur) cur.scrollIntoView({block:'center'});
+}
+function renderChapGrid(b, active){
+  $('#dlgBook').textContent = b.name;
+  const g = $('#chapGrid');
+  g.innerHTML = Array.from({length:b.nch}, (_, i) =>
+    `<button data-ch="${i+1}" class="${i+1 === active ? 'on' : ''}">${i+1}</button>`).join('');
+  $$('#chapGrid button').forEach(btn => btn.onclick = async () => {
+    $('#navDlg').close();
+    await openChapter(b.usfm, +btn.dataset.ch, null);
+  });
+}
+
+/* ---------------- search ---------------- */
+async function onSearch(ev){
+  ev.preventDefault();
+  const kind = $('#kind').value, q = $('#q').value.trim();
+  if(!q) return;
+  if(kind === 'ref'){
+    const parsed = parseRef(q);
+    if(parsed){
+      $('#q').blur();
+      await gotoRef(parsed.code, parsed.ch, parsed.v || null);
+      return;
+    }
+    // 看不懂經文格式就當關鍵字搜尋
+    await runSearch('grep', q);
+    toast('改用關鍵字搜尋');
+    return;
+  }
+  await runSearch(kind, q);
+}
+async function runSearch(kind, q){
+  $('#study').innerHTML = skeleton(6);
+  setView('study');
+  try{
+    const d = await api(`/api/search?kind=${kind}&q=${encodeURIComponent(q)}`);
+    renderSearch(d);
+  }catch(e){
+    $('#study').innerHTML = `<div class="study-empty">搜尋失敗：${esc(e.message)}</div>`;
+  }
+}
+function parseRef(q){
+  const m = q.match(/^([^\d:：\s]+)\s*(\d+)(?:\s*[:：]\s*(\d+))?/);
+  if(!m) return null;
+  const b = findBook(m[1]);
+  if(!b) return null;
+  return {code:b.usfm, ch:+m[2], v:m[3] ? +m[3] : 0};
+}
+function findBook(s){
+  const t = s.trim();
+  const alias = {'詩篇':'詩','約翰一書':'約一','約翰二書':'約二','約翰三書':'約三'};
+  const a = alias[t] || t;
+  return state.books.find(b => b.name === t)
+    || state.books.find(b => b.name === a)
+    || state.books.find(b => b.name.startsWith(a))
+    || null;
+}
+function renderSearch(d){
+  const kindLabel = {grep:'關鍵字', strong:'Strong', word:'原文詞'}[d.kind] || d.kind;
+  const hits = d.hits || [];
+  let html = `<div class="card-head"><div class="row">
+      <div class="card-ref">${esc(kindLabel)} · ${esc(d.q)}</div>
+      <div class="card-actions"><button id="closeCard2" aria-label="關閉">✕</button></div>
+    </div>
+    <p style="margin:10px 0 0;font-size:12.5px;color:var(--muted)">${esc(d.title || '')}</p>
+  </div><div class="card-body">`;
+  if(hits.length){
+    html += `<div class="hits">` + hits.map(h => {
+      const rx = d.q && d.kind === 'grep' ? new RegExp('(' + d.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')','g') : null;
+      const text = rx ? esc(h.text).replace(rx, '<mark>$1</mark>') : esc(h.text);
+      return `<button class="hit" data-code="${h.code}" data-ch="${h.ch}" data-v="${h.v}">
+        <span class="hit-l">${esc(h.label)}</span><span class="hit-t">${text}</span></button>`;
+    }).join('') + `</div>`;
+  }
+  if(d.rest) html += `<div class="md" style="padding-top:14px">${md2html(d.rest)}</div>`;
+  html += '</div>';
+  $('#study').innerHTML = html;
+  $('#closeCard2').onclick = () => setView('reader');
+  $$('#study .hit').forEach(b => b.onclick = () => gotoRef(b.dataset.code, +b.dataset.ch, +b.dataset.v));
+}
+
+/* ---------------- keyboard ---------------- */
+function onKey(e){
+  const tag = (e.target && e.target.tagName) || '';
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag)){ if(e.key === 'Escape') e.target.blur(); return; }
+  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  if(e.key === '/' ){ e.preventDefault(); $('#q').focus(); return; }
+  if(e.key === 'Escape'){
+    if($('#navDlg').open){ $('#navDlg').close(); return; }
+    if($('#helpDlg').open){ $('#helpDlg').close(); return; }
+    if(state.view === 'study' && innerWidth <= 900){ setView('reader'); return; }
+    return;
+  }
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); gotoChapter(state.ch - 1); return; }
+  if(e.key === 'ArrowRight'){ e.preventDefault(); gotoChapter(state.ch + 1); return; }
+  if(e.key === 'j' || e.key === 'ArrowDown'){ e.preventDefault(); moveSel(1); return; }
+  if(e.key === 'k' || e.key === 'ArrowUp'){ e.preventDefault(); moveSel(-1); return; }
+}
+function moveSel(d){
+  if(!state.data) return;
+  const vs = state.data.verses.map(v=>v.v);
+  let idx = state.sel ? vs.indexOf(state.sel) : -1;
+  idx = Math.max(0, Math.min(vs.length - 1, idx + d));
+  selectVerse(vs[idx], {scroll:true});
+}
+
+/* ---------------- splitter (drag to resize panes) ---------------- */
+const SPLIT_MIN = 280, SPLIT_MAX = 760, SPLIT_DEFAULT = 280;
+function splitMax(){
+  // 經文欄至少留 440px，避免窄螢幕時被擠掉
+  return Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, innerWidth - 440));
+}
+function splitWidth(){
+  const v = parseInt(getComputedStyle(document.documentElement)
+    .getPropertyValue('--split')) || SPLIT_DEFAULT;
+  return Math.min(splitMax(), Math.max(SPLIT_MIN, v));
+}
+function setSplit(px){
+  px = Math.round(Math.min(splitMax(), Math.max(SPLIT_MIN, px)));
+  document.documentElement.style.setProperty('--split', px + 'px');
+  return px;
+}
+function initSplitter(){
+  const saved = parseInt(localStorage.getItem('bible.split'));
+  setSplit(saved || SPLIT_DEFAULT);
+  const el = $('#splitter');
+  if(!el) return;
+  let dragging = false;
+  el.addEventListener('pointerdown', e => {
+    if(innerWidth <= 900) return;
+    dragging = true;
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('active');
+    document.body.classList.add('resizing');
+    e.preventDefault();
+  });
+  el.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    // 分隔線往右移 → 經文欄變寬、研讀欄變小
+    setSplit(splitWidth() - e.movementX);
+  });
+  const stop = e => {
+    if(!dragging) return;
+    dragging = false;
+    el.classList.remove('active');
+    document.body.classList.remove('resizing');
+    try{ el.releasePointerCapture(e.pointerId); }catch{}
+    localStorage.setItem('bible.split', String(splitWidth()));
+  };
+  el.addEventListener('pointerup', stop);
+  el.addEventListener('pointercancel', stop);
+  el.addEventListener('dblclick', () => {
+    setSplit(SPLIT_DEFAULT);
+    localStorage.setItem('bible.split', String(SPLIT_DEFAULT));
+  });
+}
+
+/* ---------------- misc ---------------- */
+let toastTimer;
+
+/* font size control for study notes (3 levels) */
+const FS_SIZES = ['12px', '14px', '16px'];
+let fsIndex = parseInt(localStorage.getItem('bible.fontSize'), 10);
+if(!(fsIndex >= 0 && fsIndex <= 2)) fsIndex = 1;
+function applyFS(idx){
+  fsIndex = idx;
+  document.querySelectorAll('#study .sec-body').forEach(el => { el.style.fontSize = FS_SIZES[idx]; });
+  document.querySelectorAll('#study .font-size-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  localStorage.setItem('bible.fontSize', String(idx));
+}
+document.addEventListener('click', e => {
+  const b = e.target && e.target.closest ? e.target.closest('.font-size-btn') : null;
+  if(!b || !b.parentNode) return;
+  applyFS(Array.prototype.indexOf.call(b.parentNode.children, b));
+});
+applyFS(fsIndex);
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('on'), 2200);
+}
+
+boot().catch(e => {
+  $('#verses').innerHTML = `<p style="color:var(--muted)">啟動失敗：${esc(e.message)}</p>`;
+});
+</script>
+</body>
+</html>

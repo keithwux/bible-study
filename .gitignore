@@ -1,0 +1,14 @@
+# 資料與快取（版權僅供個人使用，不隨程式散布）
+cache.sqlite
+*.sqlite
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# 個人草稿
+BRIEF-open-design.md
+preview-qp.html
