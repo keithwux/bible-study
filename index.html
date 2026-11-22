@@ -5,10 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>查經</title>
 <style>
+  /* 中文宋體子集（只含本聖經用到的 4,015 字，約 1.5 MB）
+     用途：iPhone／iPad 沒有內建中文襯線字，serif 會退回蘋方(黑體)，
+     自帶這一份就能和桌機的明體外觀一致。 */
+  @font-face{
+    font-family:"Bible Serif";
+    src:url("/fonts/bible-serif.woff2") format("woff2");
+    font-weight:200 900;
+    font-display:swap;
+  }
   :root{
     --paper:#fbfaf6; --panel:#fffefb; --ink:#15171a; --muted:#71767d;
     --line:#e6e2d8; --hl:#f2efe6; --accent:#9a7b57; --accent-ink:#7c5f40;
-    --serif:"Songti TC","Noto Serif TC","Source Han Serif TC",Georgia,serif;
+    --serif:"Bible Serif","PMingLiU","MingLiU","新細明體","Songti TC","Songti SC","STSong","宋體-繁","宋体-简","Noto Serif TC","Noto Serif CJK TC","Source Han Serif TC",Georgia,serif;
     --sans:-apple-system,"PingFang TC","Noto Sans TC","Helvetica Neue",sans-serif;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
     --header:56px;

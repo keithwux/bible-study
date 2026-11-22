@@ -32,6 +32,10 @@ command -v python3 >/dev/null || { echo "錯誤：找不到 python3，請先安�
 
 mkdir -p "$APP_DIR"
 cp "$SRC/index.html" "$SRC/server.py" "$APP_DIR/"
+if [ -d "$SRC/fonts" ]; then
+  mkdir -p "$APP_DIR/fonts"
+  cp "$SRC"/fonts/*.woff2 "$APP_DIR/fonts/" 2>/dev/null || true
+fi
 
 # 自簽憑證（HTTPS 用）：有 openssl 就產生，沒有就只跑 HTTP
 TLS_ENV=""

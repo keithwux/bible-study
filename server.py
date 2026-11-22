@@ -459,6 +459,25 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def send_font(self, path):
+        """只允許 fonts/ 下的 woff2（給 iPhone 用的中文宋體子集）。"""
+        name = os.path.basename(path)
+        if not name.endswith(".woff2"):
+            self.send_json({"error": "not found"}, 404)
+            return
+        full = os.path.join(HERE, "fonts", name)
+        if not os.path.exists(full):
+            self.send_json({"error": "not found"}, 404)
+            return
+        with open(full, "rb") as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", "font/woff2")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
@@ -466,6 +485,9 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if u.path in ("/", "/index.html"):
                 self.send_html()
+                return
+            if u.path.startswith("/fonts/"):
+                self.send_font(u.path)
                 return
             if u.path == "/api/health":
                 self.send_json({"ok": True, "data": DATA, "port": PORT})
