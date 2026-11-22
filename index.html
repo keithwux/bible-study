@@ -263,6 +263,12 @@
   details.tr .t+ .t{padding-top:0}
   details.tr .t b{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--accent);
     display:block;margin-bottom:2px}
+  /* 其他譯本（放在最後一個區塊） */
+  .tr-body{font-family:var(--sans)}
+  .tr-body .t{padding:0 0 12px;font-size:13px;line-height:1.75;color:var(--ink)}
+  .tr-body .t:last-child{padding-bottom:0}
+  .tr-body .t b{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--accent);
+    display:block;margin-bottom:2px}
 
   /* xrefs */
   .xrefs{display:flex;flex-direction:column;gap:2px;margin:-4px 0 4px}
@@ -505,6 +511,8 @@
         <dd>各本英文註釋書（公有領域，另有 Tyndale，CC BY-SA 4.0）。每本一則，先給中文譯本，<b>English 原文</b> 可展開；標籤顯示這一則涵蓋哪幾節，涵蓋整章的超長註解收在「展開整章註解」。</dd>
         <dt>串珠</dt>
         <dd>與本節相關的其他經文（信望愛串珠），點一下跳過去。</dd>
+        <dt>其他譯本</dt>
+        <dd>KJV、BSB、ASV 三個英文譯本，放在整個研讀欄的最後（串珠之後），要對照時再展開。</dd>
       </dl>
 
       <h3>資料與版權</h3>
@@ -853,8 +861,6 @@ function renderStudy(d){
       </div>
     </div>
     ${lead ? `<p class="card-lead">${esc(lead.text)}</p>` : ''}
-    ${others.length ? `<details class="tr"><summary>其他譯本 ${others.length}</summary>
-      ${others.map(t=>`<div class="t"><b>${esc(t.label)}</b>${esc(t.text)}</div>`).join('')}</details>` : ''}
   </div><div class="card-body">`;
 
   // 中文／英文註解改由 /api/notes 直接讀（每則同時有中英），這裡只留位置
@@ -897,6 +903,13 @@ for(const s of (d.sections || [])){
         ${rest.length ? `<div class="chips-label">其餘</div><div class="chips">
           ${rest.map(x=>`<button class="chip" data-code="${x.code}" data-ch="${x.ch}" data-v="${x.v}">${esc(x.label)}</button>`).join('')}
         </div>` : ''}
+      </div></details>`;
+  }
+  // 其他譯本（KJV／BSB／ASV）：放到最後，串珠之後
+  if(others.length){
+    html += `<details class="sec"><summary>其他譯本 <span class="count">${others.length}</span></summary>
+      <div class="sec-body tr-body">
+        ${others.map(t=>`<div class="t"><b>${esc(t.label)}</b>${esc(t.text)}</div>`).join('')}
       </div></details>`;
   }
   html += '</div>';
