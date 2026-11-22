@@ -474,7 +474,7 @@
 
       <h3>鍵盤與手勢</h3>
       <p><kbd>↑</kbd> <kbd>↓</kbd> 換節　<kbd>←</kbd> <kbd>→</kbd> 換章　<kbd>/</kbd> 移到搜尋　<kbd>Esc</kbd> 關閉面板或對話框</p>
-      <p>手機與平板（螢幕寬 900px 以下）也可以用手勢：<b>經文</b>頁左右撥＝上一章／下一章，<b>研讀</b>頁左右撥＝上一節／下一節（手指往左撥是「下一」，往右撥是「上一」）。</p>
+      <p>手機與平板（螢幕寬 900px 以下）也可以用手勢：<b>經文</b>頁左右撥＝上一章／下一章，<b>研讀</b>頁左右撥＝上一節／下一節（手指往左撥是「下一」，往右撥是「上一」）。研讀頁撥到章末會接到下一章第 1 節，卷末最後一節再往左撥會接下一卷第 1 章第 1 節；反向也一樣，會接到上一章最後一節或上一卷最後一章最後一節。</p>
 
       <h3>原文字彙分析</h3>
       <p>按原文語序列出這一節的每一個字，欄位意思如下：</p>
@@ -1339,12 +1339,35 @@ function onKey(e){
   if(e.key === 'j' || e.key === 'ArrowDown'){ e.preventDefault(); moveSel(1); return; }
   if(e.key === 'k' || e.key === 'ArrowUp'){ e.preventDefault(); moveSel(-1); return; }
 }
-function moveSel(d){
+async function moveSel(d){
   if(!state.data) return;
   const vs = state.data.verses.map(v=>v.v);
-  let idx = state.sel ? vs.indexOf(state.sel) : -1;
-  idx = Math.max(0, Math.min(vs.length - 1, idx + d));
-  selectVerse(vs[idx], {scroll:true});
+  const idx = state.sel ? vs.indexOf(state.sel) : -1;
+  const target = idx + d;
+  if(target >= 0 && target < vs.length){
+    selectVerse(vs[target], {scroll:true});
+    return;
+  }
+  // 超出本章：往前／往後接到相鄰章，跨到卷尾／卷首則換卷
+  const bi = state.books.findIndex(b => b.usfm === state.book.usfm);
+  if(d > 0){
+    if(state.ch < state.book.nch){
+      await openChapter(state.book.usfm, state.ch + 1, 1, {silent:true});
+      return;
+    }
+    const nb = state.books[bi + 1];
+    if(nb) await openChapter(nb.usfm, 1, 1, {silent:true});   // 已是全聖經最後一節則不動
+    return;
+  }
+  if(state.ch > 1){
+    await openChapter(state.book.usfm, state.ch - 1, null, {silent:true});
+  } else {
+    const pb = state.books[bi - 1];
+    if(!pb) return;                                            // 已是全聖經第一節
+    await openChapter(pb.usfm, pb.nch, null, {silent:true});
+  }
+  const list = (state.data && state.data.verses) || [];
+  if(list.length) selectVerse(list[list.length - 1].v, {scroll:true});
 }
 
 /* ---------------- 手機手勢：左右滑動 ---------------- */
