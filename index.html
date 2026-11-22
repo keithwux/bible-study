@@ -374,11 +374,13 @@
     .toggle,.iconbtn[data-hide-mobile]{display:none}
     main.app{display:block;height:auto}
     .reader{overflow:visible}
-    .reader-inner{max-width:none;padding:22px 20px 88px}
+    .reader-inner{max-width:none;padding:22px 16px 88px}
     .reader-head{margin:-22px 0 12px;padding:18px 0 10px}
     .crumb{font-size:22px}
     :root{--zh-size:18px}
     .zh{line-height:1.9}
+    /* 右側留白不屬於經文的點擊區：撥動或點到邊緣空白都不會誤跳研讀 */
+    .verse{margin-right:-2px;padding-right:0}
     .study{display:none;position:fixed;inset:var(--header) 0 0;border-left:0;z-index:25;
       background:var(--panel);overflow-y:auto;-webkit-overflow-scrolling:touch}
     .splitter{display:none}
@@ -852,7 +854,10 @@ function renderVerses(data){
         .map(k=>`<div><b>${k}</b>${esc(v.en[k])}</div>`).join('')}</div>` : ''}
     </div>`).join('');
   $$('#verses .verse').forEach(el => {
-    el.onclick = () => selectVerse(+el.dataset.v);
+    el.onclick = () => {
+      if(Date.now() < ignoreVerseClickUntil) return;   // 剛撥動過：不要誤觸跳研讀
+      selectVerse(+el.dataset.v);
+    };
     el.onkeydown = ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); selectVerse(+el.dataset.v); } };
   });
 }
@@ -1415,7 +1420,8 @@ async function moveSel(d){
 /* ---------------- 手機手勢：左右滑動 ---------------- */
 /* 經文檢視：左滑→下一章、右滑→上一章；研讀檢視：左滑→下一節、右滑→上一節 */
 const SWIPE_X = 60, SWIPE_Y = 60, SWIPE_MS = 800;
-let swipeStart = null;
+const TAP_SLOP = 10;                 // 水平位移超過這麼多，就不算「點」
+let swipeStart = null, ignoreVerseClickUntil = 0;
 function swipeBlocked(target){
   if(!target || !target.closest) return false;
   return !!target.closest('input,select,textarea,table,.tabs,header,dialog,#navDlg,#helpDlg,#splitter');
@@ -1434,6 +1440,8 @@ document.addEventListener('touchend', e => {
   if(!s || !e.changedTouches || !e.changedTouches.length) return;
   const p = e.changedTouches[0];
   const dx = p.clientX - s.x, dy = p.clientY - s.y;
+  // 手指橫向移動過 = 撥動手勢，不讓瀏覽器補的那個 click 把經文跳去研讀
+  if(Math.abs(dx) > TAP_SLOP && Math.abs(dx) > Math.abs(dy)) ignoreVerseClickUntil = Date.now() + 500;
   if(Date.now() - s.t > SWIPE_MS) return;
   if(Math.abs(dx) < SWIPE_X || Math.abs(dy) > SWIPE_Y) return;   // 太短或偏垂直：當作捲動
   if(Math.abs(dx) < Math.abs(dy) * 1.5) return;
