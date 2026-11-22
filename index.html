@@ -466,8 +466,9 @@
         <li>點串珠或經文參照裡的任何一節，會直接跳到該章該節並閃一下。</li>
       </ol>
 
-      <h3>鍵盤</h3>
+      <h3>鍵盤與手勢</h3>
       <p><kbd>↑</kbd> <kbd>↓</kbd> 換節　<kbd>←</kbd> <kbd>→</kbd> 換章　<kbd>/</kbd> 移到搜尋　<kbd>Esc</kbd> 關閉面板或對話框</p>
+      <p>手機與平板（螢幕寬 900px 以下）也可以用手勢：<b>經文</b>頁左右撥＝上一章／下一章，<b>研讀</b>頁左右撥＝上一節／下一節（手指往左撥是「下一」，往右撥是「上一」）。</p>
 
       <h3>原文字彙分析</h3>
       <p>按原文語序列出這一節的每一個字，欄位意思如下：</p>
@@ -1332,6 +1333,40 @@ function moveSel(d){
   idx = Math.max(0, Math.min(vs.length - 1, idx + d));
   selectVerse(vs[idx], {scroll:true});
 }
+
+/* ---------------- 手機手勢：左右滑動 ---------------- */
+/* 經文檢視：左滑→下一章、右滑→上一章；研讀檢視：左滑→下一節、右滑→上一節 */
+const SWIPE_X = 60, SWIPE_Y = 60, SWIPE_MS = 800;
+let swipeStart = null;
+function swipeBlocked(target){
+  if(!target || !target.closest) return false;
+  return !!target.closest('input,select,textarea,table,.tabs,header,dialog,#navDlg,#helpDlg,#splitter');
+}
+document.addEventListener('touchstart', e => {
+  swipeStart = null;
+  if(innerWidth > 900 || e.touches.length !== 1) return;
+  if(swipeBlocked(e.target)) return;
+  if(($('#navDlg') && $('#navDlg').open) || ($('#helpDlg') && $('#helpDlg').open)) return;
+  const p = e.touches[0];
+  swipeStart = {x: p.clientX, y: p.clientY, t: Date.now()};
+}, {passive: true});
+document.addEventListener('touchcancel', () => { swipeStart = null; }, {passive: true});
+document.addEventListener('touchend', e => {
+  const s = swipeStart; swipeStart = null;
+  if(!s || !e.changedTouches || !e.changedTouches.length) return;
+  const p = e.changedTouches[0];
+  const dx = p.clientX - s.x, dy = p.clientY - s.y;
+  if(Date.now() - s.t > SWIPE_MS) return;
+  if(Math.abs(dx) < SWIPE_X || Math.abs(dy) > SWIPE_Y) return;   // 太短或偏垂直：當作捲動
+  if(Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  const next = dx < 0;                                          // 手指往左 = 下一
+  if(document.body.dataset.view === 'study'){
+    if(!state.data) return;
+    moveSel(next ? 1 : -1);
+  } else {
+    gotoChapter(state.ch + (next ? 1 : -1));
+  }
+}, {passive: true});
 
 /* ---------------- splitter (drag to resize panes) ---------------- */
 const SPLIT_MIN = 280, SPLIT_MAX = 760, SPLIT_DEFAULT = 280;
