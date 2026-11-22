@@ -190,6 +190,49 @@ def fetch_parsing(code, ch, v):
     return with_lexicon(payload), "live"
 
 
+def sn_label(raw):
+    """token 裡的編號（10481 → H481、01063 → G2316 這類）。"""
+    x = str(raw or "").strip()
+    if not x:
+        return ""
+    letter = "H" if x[0] == "1" else "G"
+    digits = re.sub(r"\D", "", x[1:] if letter == "H" else x)
+    if not digits:
+        return ""
+    return letter + str(int(digits))
+
+
+def verse_tokens(code, ch, vn):
+    if code not in CODES:
+        return []
+    with db() as conn:
+        b = conn.execute("select idx from books where usfm=?", (code,)).fetchone()
+        if not b:
+            return []
+        row = conn.execute("select t from verses where book=? and ch=? and vn=?",
+                           (b[0], ch, vn)).fetchone()
+    if not row:
+        return []
+    try:
+        return json.loads(row[0])
+    except (TypeError, ValueError):
+        return []
+
+
+def zh_for_sn(code, ch, vn, sn):
+    """該節和合本裡對應這個 Strong 的中文詞。"""
+    out = []
+    for tok in verse_tokens(code, ch, vn):
+        if len(tok) < 2:
+            continue
+        if sn not in [sn_label(x) for x in str(tok[1]).split(",")]:
+            continue
+        w = re.sub(r"^[\s，。、；：（）「」『』！？]+", "", str(tok[0])).strip()
+        if w and w not in out:
+            out.append(w)
+    return out
+
+
 def notes_for(code, ch, vn):
     """註釋書：直接讀合併 MD（每則含中文與英文原文），Tyndale 另讀 en_commentary。"""
     if code not in CODES:
@@ -485,6 +528,25 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 self.send_json({"ok": True, "source": source, **payload})
                 return
+            if u.path == "/api/forms":
+                code = one("code", "").strip().upper()
+                sn = one("sn", "").strip().upper()
+                try:
+                    ch, v = int(one("ch", "0")), int(one("v", "0"))
+                except ValueError:
+                    self.send_json({"ok": False, "error": "章節格式錯誤"}, 400)
+                    return
+                try:
+                    payload, _src = fetch_parsing(code, ch, v)
+                except Exception as exc:
+                    self.send_json({"ok": False, "error": f"線上取得失敗：{exc}"})
+                    return
+                rows = (payload or {}).get("rows") or []
+                forms = [{"word": r.get("word"), "tr": r.get("tr"), "ph": r.get("ph"),
+                          "pro": r.get("pro"), "wform": r.get("wform")}
+                         for r in rows if r.get("sn") == sn]
+                self.send_json({"ok": True, "sn": sn, "forms": forms})
+                return
             if u.path == "/api/notes":
                 code = one("code", "").strip().upper()
                 try:
@@ -510,6 +572,13 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 md = run_lookup([flag, term])
                 hits, rest = parse_hits(md)
+                if kind == "strong":
+                    sn = term.upper().strip()
+                    tr, ph = strong_lex(sn)
+                    for h in hits:
+                        h["sn"] = sn
+                        h["zh"] = zh_for_sn(h["code"], h["ch"], h["v"], sn)
+                        h["tr"], h["ph"] = tr, ph
                 title = ""
                 for line in md.splitlines():
                     if line.startswith("## "):

@@ -277,6 +277,11 @@
   .hit-l{font-family:var(--mono);font-size:11.5px;color:var(--accent-ink)}
   .hit-t{font-family:var(--serif);font-size:13.5px;line-height:1.7;color:var(--ink)}
   .hit-t mark{background:var(--hl);color:var(--accent-ink);padding:0 2px;border-radius:2px}
+  .hit-ex{grid-column:2;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;margin-top:3px}
+  .ex-zh{font-family:var(--serif);font-size:13px;color:var(--accent-ink)}
+  .ex-tr{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-style:italic}
+  .ex-form{font-family:var(--serif);font-size:14px;color:var(--ink);letter-spacing:.02em}
+  .ex-form.pending{color:var(--line)}
 
   /* skeleton */
   .sk{padding:22px}
@@ -1227,11 +1232,17 @@ function renderSearch(d){
     <p style="margin:10px 0 0;font-size:12.5px;color:var(--muted)">${esc(d.title || '')}</p>
   </div><div class="card-body">`;
   if(hits.length){
+    const isStrong = d.kind === 'strong';
     html += `<div class="hits">` + hits.map(h => {
       const rx = d.q && d.kind === 'grep' ? new RegExp('(' + d.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')','g') : null;
       const text = rx ? esc(h.text).replace(rx, '<mark>$1</mark>') : esc(h.text);
-      return `<button class="hit" data-code="${h.code}" data-ch="${h.ch}" data-v="${h.v}">
-        <span class="hit-l">${esc(h.label)}</span><span class="hit-t">${text}</span></button>`;
+      const ex = isStrong ? `<span class="hit-ex">
+          ${(h.zh || []).length ? `<span class="ex-zh">${esc((h.zh || []).join('·'))}</span>` : ''}
+          ${h.tr ? `<span class="ex-tr">${esc(h.tr)}${h.ph ? ' ［' + esc(h.ph) + '］' : ''}</span>` : ''}
+          <span class="ex-form pending" data-sn="${esc(h.sn || d.q)}">⋯</span>
+        </span>` : '';
+      return `<button class="hit" data-code="${h.code}" data-ch="${h.ch}" data-v="${h.v}" data-sn="${esc(h.sn || d.q || '')}">
+        <span class="hit-l">${esc(h.label)}</span><span class="hit-t">${text}</span>${ex}</button>`;
     }).join('') + `</div>`;
   }
   if(d.rest) html += `<div class="md" style="padding-top:14px">${md2html(d.rest)}</div>`;
@@ -1239,6 +1250,52 @@ function renderSearch(d){
   $('#study').innerHTML = html;
   $('#closeCard2').onclick = () => setView('reader');
   $$('#study .hit').forEach(b => b.onclick = () => gotoRef(b.dataset.code, +b.dataset.ch, +b.dataset.v));
+  if(d.kind === 'strong' && 'IntersectionObserver' in window){
+    const io = new IntersectionObserver(es => {
+      es.forEach(e => {
+        if(!e.isIntersecting) return;
+        io.unobserve(e.target);
+        const f = e.target.querySelector('.ex-form');
+        if(f && f.classList.contains('pending'))
+          loadForm(f, e.target.dataset.sn, e.target.dataset.code, +e.target.dataset.ch, +e.target.dataset.v);
+      });
+    }, {rootMargin: '300px'});
+    $$('#study .hit').forEach(b => io.observe(b));
+  }
+}
+
+/* Strong 搜尋：每一節的原文形按需抓（只抓看得到的），抓過就記住 */
+const formCache = new Map();
+let formChain = Promise.resolve();
+
+function paintForm(el, rec){
+  if(!rec) return;
+  el.classList.remove('pending');
+  el.textContent = rec.words.length ? rec.words.join(' · ') : '原文未載';
+  if(rec.info) el.title = rec.info;
+}
+
+function loadForm(el, sn, code, ch, v){
+  if(!sn || !code) return;
+  const key = `${code}/${ch}/${v}/${sn}`;
+  if(formCache.has(key)){ paintForm(el, formCache.get(key)); return; }
+  formChain = formChain.then(async () => {
+    if(!el.isConnected) return;
+    if(formCache.has(key)){ paintForm(el, formCache.get(key)); return; }
+    try{
+      const d = await api(`/api/forms?code=${code}&ch=${ch}&v=${v}&sn=${encodeURIComponent(sn)}`);
+      const forms = d.forms || [];
+      const rec = {
+        words: forms.map(f => f.word).filter(Boolean),
+        info: forms.map(f => [f.word, f.wform, f.pro].filter(Boolean).join(' · ')).join('  ／  ')
+      };
+      formCache.set(key, rec);
+      paintForm(el, rec);
+    }catch(e){
+      el.classList.remove('pending');
+      el.textContent = '原文未載';
+    }
+  });
 }
 
 /* ---------------- keyboard ---------------- */

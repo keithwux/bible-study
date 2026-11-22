@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>查經 · 離線聖經研讀工作台</title>
+<meta name="description" content="自用的離線查經網頁：和合本閱讀、原文字彙分析（Strong／音譯／詞性）、CBOL 註解、各本註釋書、串珠。">
+<style>
+  :root{
+    --paper:#fbfaf6; --panel:#fffefb; --ink:#15171a; --muted:#71767d;
+    --line:#e6e2d8; --hl:#f2efe6; --accent:#9a7b57; --accent-ink:#7c5f40;
+    --serif:"Songti TC","Noto Serif TC","Source Han Serif TC",Georgia,serif;
+    --sans:-apple-system,"PingFang TC","Noto Sans TC","Helvetica Neue",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+       font-size:16px;line-height:1.8;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid rgba(124,95,64,.3)}
+  a:hover{border-bottom-color:var(--accent-ink)}
+  header{padding:72px 24px 56px;text-align:center;border-bottom:1px solid var(--line)}
+  header h1{font-family:var(--serif);font-weight:400;font-size:clamp(30px,5vw,46px);
+            letter-spacing:.08em;margin:0 0 14px}
+  header p{margin:0 auto;max-width:34em;color:var(--muted);font-size:15px}
+  .tag{display:inline-block;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;
+       color:var(--accent-ink);border:1px solid var(--line);border-radius:999px;
+       padding:3px 12px;margin-bottom:22px}
+  main{max-width:1000px;margin:0 auto;padding:0 24px 96px}
+  section{padding:56px 0 8px;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:0}
+  h2{font-family:var(--serif);font-weight:400;font-size:21px;letter-spacing:.06em;margin:0 0 6px}
+  h2 small{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+           color:var(--muted);margin-top:8px;text-transform:uppercase}
+  p.lead{color:var(--muted);font-size:14.5px;margin:10px 0 22px}
+  figure{margin:0 0 26px}
+  figure img{width:100%;height:auto;display:block;border:1px solid var(--line);
+             border-radius:12px;background:var(--panel)}
+  figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .grid img{width:100%;display:block;border:1px solid var(--line);border-radius:12px}
+  table{width:100%;border-collapse:collapse;font-size:14.5px;margin:4px 0 18px}
+  th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;font-size:12px;letter-spacing:.1em;color:var(--muted);font-family:var(--mono)}
+  td:first-child{white-space:nowrap;font-family:var(--serif)}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+        border-radius:10px;padding:18px 20px;font-size:14px;color:var(--ink);margin:20px 0}
+  .note b{color:var(--accent-ink)}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+      padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.7}
+  code{font-family:var(--mono);font-size:.92em}
+  ul{padding-left:1.25em;margin:0 0 18px}
+  li{margin:.3em 0}
+  footer{padding:40px 24px 72px;text-align:center;color:var(--muted);font-size:13px;
+         border-top:1px solid var(--line)}
+  .btn{display:inline-block;margin-top:6px;padding:11px 22px;border:1px solid var(--ink);
+       border-radius:999px;font-size:14px;color:var(--ink);border-bottom:1px solid var(--ink)}
+  .btn:hover{background:var(--hl)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">OFFLINE BIBLE STUDY</div>
+  <h1>查經</h1>
+  <p>一個自用的離線聖經研讀工作台：左邊讀和合本，右邊看原文逐字分析、Strong 字典、CBOL 註解、各本註釋書與串珠。</p>
+  <p style="margin-top:22px"><a class="btn" href="https://github.com/keithwux/bible-study">原始碼 → GitHub</a></p>
+</header>
+
+<main>
+
+  <section>
+    <h2>這個頁面是什麼<small>why a landing page, not the app</small></h2>
+    <p class="lead">這裡是靜態專案頁。應用程式本身不能放在這裡跑，原因有兩個，都很實際。</p>
+    <div class="note">
+      <b>1. 需要後端。</b>經文、原文分析與註解由一個本機的 Python 服務（標準庫 HTTP 伺服器）讀 SQLite 提供，靜態託管只能送檔案，無法執行它。<br>
+      <b>2. 資料不能公開散布。</b>Strong 字典、CBOL 註解與串珠來自信望愛站，授權僅限個人研讀使用；聖經資料庫本身約 282 MB。這些都不在 repo 裡，也不適合放上公開網站。
+    </div>
+    <p class="lead">所以：程式碼公開、畫面公開，實際使用請在自己電腦上跑（見下方安裝）。</p>
+  </section>
+
+  <section>
+    <h2>畫面<small>screenshots</small></h2>
+    <figure>
+      <img src="img/desktop.png" alt="桌面版：左邊經文，右邊原文字彙分析">
+      <figcaption>桌面／平板橫向：左右雙欄，中間細線可拖曳調整寬度。</figcaption>
+    </figure>
+    <div class="grid">
+      <figure>
+        <img src="img/strong.png" alt="Strong 搜尋結果，每節附中文、音譯與原文形">
+        <figcaption>Strong 搜尋：每一節同時給和合本用詞、音譯音標與該節實際出現的原文形。</figcaption>
+      </figure>
+      <figure>
+        <img src="img/mobile.png" alt="手機版：研讀分頁">
+        <figcaption>手機／平板直立：單欄，上方「經文／研讀」分頁切換。</figcaption>
+      </figure>
+    </div>
+    <figure style="margin-top:26px">
+      <img src="img/notes.png" alt="註解區：各本註釋書的中文與英文原文">
+      <figcaption>註解：每本註釋書一則，中文譯本為主、英文原文可展開，並標示涵蓋節數。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>功能<small>features</small></h2>
+    <table>
+      <tr><th>區塊</th><th>內容</th></tr>
+      <tr><td>經文</td><td>和合本；可切換顯示 KJV／BSB／ASV</td></tr>
+      <tr><td>原文字彙分析</td><td>原文語序逐字：和合本用詞、原文字、Strong 編號、英文音譯與音標、詞性字形、原型、字義</td></tr>
+      <tr><td>原文直譯</td><td>依原文語序的直譯句，用來對照和合本怎麼調整語序</td></tr>
+      <tr><td>CBOL 註解重點</td><td>中文註解，四級大綱自動排版，內文經文參照可點</td></tr>
+      <tr><td>註解</td><td>Matthew Henry／J.F.B.／Barnes／Tyndale；中文譯本＋英文原文</td></tr>
+      <tr><td>串珠</td><td>相關經文，點擊直接跳到該章該節</td></tr>
+      <tr><td>搜尋</td><td>經文參照、關鍵字、原文詞、Strong 編號</td></tr>
+    </table>
+    <p class="lead">鍵盤 <code>↑</code> <code>↓</code> 換節、<code>←</code> <code>→</code> 換章、<code>/</code> 搜尋、<code>Esc</code> 關閉。字級 A−／A／A+ 三級，選擇會記住。</p>
+  </section>
+
+  <section>
+    <h2>在自己的電腦上跑<small>run locally</small></h2>
+    <p class="lead">需要 Python 3.11 以上，以及一份依信望愛站授權自行取得的資料集（見 repo 的 README）。</p>
+<pre><code>git clone https://github.com/keithwux/bible-study.git
+cd bible-study
+export BIBLE_DATA=/path/to/your/bible-data
+python3 server.py          # http://127.0.0.1:8790</code></pre>
+    <p class="lead">沒有 build step、沒有套件安裝：一個 Python 檔當後端，一個 HTML 檔當前端。資料全部在本機，斷網可讀；只有「原文字彙分析」第一次看某節時需要連線，之後自動快取。</p>
+  </section>
+
+  <section>
+    <h2>授權<small>licence</small></h2>
+    <ul>
+      <li><b>程式碼</b>：自由使用與修改。</li>
+      <li><b>經文</b>：和合本與 KJV／BSB／ASV 的授權各異，請在你取得的授權範圍內使用。</li>
+      <li><b>Strong 編號與字典、CBOL 註解、串珠</b>：來自信望愛站（bible.fhl.net），僅供個人研讀，不得再散布。</li>
+      <li><b>註釋書</b>：Matthew Henry、Jamieson-Fausset-Brown、Barnes 為公有領域；Tyndale Study Bible 為 CC BY-SA 4.0。</li>
+    </ul>
+    <p class="lead">本專案與信望愛站無隸屬關係。</p>
+  </section>
+
+</main>
+
+<footer>
+  查經 · 離線聖經研讀工作台　|　<a href="https://github.com/keithwux/bible-study">github.com/keithwux/bible-study</a>
+</footer>
+
+</body>
+</html>
