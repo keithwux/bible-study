@@ -1,5 +1,7 @@
 # 查經 Bible Study
 
+專案頁（截圖與說明）：<https://keithwux.github.io/bible-study/>
+
 一個自用的離線查經網頁：左邊讀經文，右邊看原文、Strong 字典、CBOL 註解、各本註釋書與串珠。
 
 - 單一 Python 檔後端（只用標準庫）＋ 單一 HTML 前端，無框架、無 build step
