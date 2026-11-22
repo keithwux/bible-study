@@ -371,6 +371,7 @@
     .chapgrid{grid-template-columns:repeat(auto-fill,minmax(44px,1fr))}
     .card-head{padding:12px 16px 10px}
     .card-body{padding:4px 16px 90px}
+    .sec-body{font-size:16px}
     .xref{grid-template-columns:88px 1fr;gap:8px}
     .hit{grid-template-columns:70px 1fr;gap:8px}
     .toast{bottom:18px}
@@ -1378,12 +1379,17 @@ function initSplitter(){
 let toastTimer;
 
 /* font size control for study notes (3 levels) */
-const FS_SIZES = ['12px', '14px', '16px'];
+/* 字級：桌面 12/14/16；手機把原本最大的 16 當最小，再往上加兩級 */
+const FS_DESKTOP = ['12px', '14px', '16px'];
+const FS_MOBILE = ['16px', '18px', '20px'];
+const MQ_MOBILE = window.matchMedia('(max-width: 900px)');
+function fsSizes(){ return MQ_MOBILE.matches ? FS_MOBILE : FS_DESKTOP; }
 let fsIndex = parseInt(localStorage.getItem('bible.fontSize'), 10);
 if(!(fsIndex >= 0 && fsIndex <= 2)) fsIndex = 1;
 function applyFS(idx){
   fsIndex = idx;
-  document.querySelectorAll('#study .sec-body').forEach(el => { el.style.fontSize = FS_SIZES[idx]; });
+  const sizes = fsSizes();
+  document.querySelectorAll('#study .sec-body').forEach(el => { el.style.fontSize = sizes[idx]; });
   document.querySelectorAll('#study .font-size-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   localStorage.setItem('bible.fontSize', String(idx));
 }
@@ -1393,6 +1399,7 @@ document.addEventListener('click', e => {
   applyFS(Array.prototype.indexOf.call(b.parentNode.children, b));
 });
 applyFS(fsIndex);
+if (MQ_MOBILE.addEventListener) MQ_MOBILE.addEventListener('change', () => applyFS(fsIndex));
 function toast(msg){
   const t = $('#toast');
   t.textContent = msg;
