@@ -338,8 +338,14 @@
   .help-body{padding:6px 22px 26px;overflow-y:auto;font-family:var(--sans);font-size:13.5px;line-height:1.85}
   .help-body h3{font-family:var(--sans);font-size:12px;letter-spacing:.14em;color:var(--muted);
     font-weight:600;margin:22px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
-  .help-body ol{margin:0;padding-left:1.4em}
-  .help-body ol li{margin:.35em 0}
+  .help-body ol,.help-body ul{margin:0;padding-left:1.4em}
+  .help-body ol li,.help-body ul li{margin:.35em 0}
+  .help-body table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12.5px}
+  .help-body th,.help-body td{border-bottom:1px solid var(--line);padding:6px 8px;
+    text-align:left;vertical-align:top}
+  .help-body th{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--muted);
+    border-bottom:1px solid var(--accent)}
+  .help-body td:first-child{white-space:nowrap;color:var(--muted)}
   .help-body dl{margin:0}
   .help-body dt{font-weight:600;color:var(--accent-ink);margin-top:.7em}
   .help-body dd{margin:.15em 0 0;color:var(--ink)}
@@ -469,20 +475,48 @@
   <div class="help-wrap">
     <header><b>用法與名詞說明</b><button class="iconbtn" id="helpClose" aria-label="關閉">✕</button></header>
     <div class="help-body">
+      <h3>兩個頁面</h3>
+      <p><b>經文</b>：讀和合本，點任一節就查這一節。<b>研讀</b>：右邊（手機上是切換後的整頁）出現原文、Strong、CBOL、註解與串珠。</p>
+      <p>螢幕寬 900px 以上是左右雙欄，中間細線可左右拖動調寬度、雙擊重設；<b>手機與平板直立</b>改成上方「經文／研讀」兩個分頁，看哪一頁就佔滿整個畫面。</p>
+
       <h3>怎麼用</h3>
       <ol>
-        <li>左邊是經文，點任一節 → 右邊出現這一節的全部資料。</li>
-        <li>上方書卷＋章號（<b>創世記 2</b>）可跳書卷與章；<b>←</b> <b>→</b> 按鈕或鍵盤左右鍵換章。</li>
-        <li>搜尋列可打經文（<code>創1:1</code>、<code>約3:16-18</code>）、關鍵字（<b>真理</b>）、原文詞（<b>愛</b>）或 Strong 編號（<b>G2316</b>），記得左邊選對方式。</li>
-        <li><b>EN</b> 開關顯示或收起每節下面的 KJV、BSB、ASV 三種英文譯本。</li>
-        <li>字級分開控制、各自記住：經文頁章節切換鈕左邊的 <b>A−</b> <b>A</b> <b>A+</b> 調經文大小，右欄上方的 <b>A−</b> <b>A</b> <b>A+</b> 調研讀欄大小。手機上兩組也各自不同（經文 16/18/21px、研讀 16/18/20px）。</li>
-        <li>桌面與平板橫向是左右雙欄，中間細線可左右拖動調寬度、雙擊重設；平板直立與手機改用上方「經文／研讀」分頁。</li>
-        <li>點串珠或經文參照裡的任何一節，會直接跳到該章該節並閃一下。</li>
+        <li>點左上書卷＋章號（<b>創世記 2</b>）開書卷與章次選單；手機上選單是全螢幕，先點書卷再點章。</li>
+        <li>經文上方的 <b>←</b> <b>→</b> 換章，中間顯示「第幾章／共幾章」；到第一卷第一章或最後一卷最後一章時按鈕會變淡。</li>
+        <li>搜尋列可打經文（<code>創1:1</code>、<code>約3:16-18</code>）、關鍵字（<b>真理</b>）、原文詞（<b>愛</b>）或 Strong 編號（<b>G2316</b>），左邊要先選對方式。</li>
+        <li>點串珠或經文參照裡的任何一節，會跳到該章該節並閃一下。</li>
+        <li>研讀欄右上角的三個小圖示：<b>⧉</b> 複製這一節的連結、<b>✕</b> 關閉研讀欄（手機回到經文頁）、<b>A− A A+</b> 調研讀欄字級。</li>
+        <li><b>EN</b> 開關只在寬螢幕出現，打開後每節下面多出 KJV、BSB、ASV 三種英文。手機上看不到這個開關，請改用研讀欄最底部的「其他譯本」，或把螢幕轉成橫向。</li>
       </ol>
 
-      <h3>鍵盤與手勢</h3>
-      <p><kbd>↑</kbd> <kbd>↓</kbd> 換節　<kbd>←</kbd> <kbd>→</kbd> 換章　<kbd>/</kbd> 移到搜尋　<kbd>Esc</kbd> 關閉面板或對話框</p>
-      <p>手機與平板（螢幕寬 900px 以下）也可以用手勢：<b>經文</b>頁左右撥＝上一章／下一章，<b>研讀</b>頁左右撥＝上一節／下一節（手指往左撥是「下一」，往右撥是「上一」）。研讀頁撥到章末會接到下一章第 1 節，卷末最後一節再往左撥會接下一卷第 1 章第 1 節；反向也一樣，會接到上一章最後一節或上一卷最後一章最後一節。</p>
+      <h3>手勢與鍵盤</h3>
+      <p><b>手機／平板（寬 900px 以下）左右撥</b></p>
+      <ul>
+        <li><b>經文</b>頁：往左撥＝下一章，往右撥＝上一章</li>
+        <li><b>研讀</b>頁：往左撥＝下一節，往右撥＝上一節</li>
+        <li>撥到章末最後一節再往左，會接到<b>下一章第 1 節</b>；卷末最後一節再往左，接<b>下一卷第 1 章第 1 節</b>。反向同理，會接到上一章最後一節或上一卷最後一章最後一節。全聖經的第一節與最後一節就停住。</li>
+        <li>撥動要橫向、至少 60px、且比垂直位移明顯；太短或偏上下都不會觸發，所以正常捲動不受影響。從輸入框、表格、上方標題列或對話框上開始的撥動也會忽略。</li>
+      </ul>
+      <p><b>鍵盤</b>：<kbd>↑</kbd> <kbd>↓</kbd> 換節　<kbd>←</kbd> <kbd>→</kbd> 換章　<kbd>/</kbd> 移到搜尋　<kbd>Esc</kbd> 關面板或對話框</p>
+
+      <h3>字級（兩組各自記住）</h3>
+      <table>
+        <tr><th></th><th>經文</th><th>研讀欄</th></tr>
+        <tr><td>按鈕位置</td><td>經文頁 ← → 左邊</td><td>研讀欄右上角</td></tr>
+        <tr><td>桌機三級</td><td>17 / 19 / 22px</td><td>12 / 14 / 16px</td></tr>
+        <tr><td>手機三級</td><td>16 / 18 / 21px</td><td>16 / 18 / 20px</td></tr>
+      </table>
+      <p>兩組互不影響，選擇存在這台裝置的瀏覽器裡，下次打開照舊。</p>
+
+      <h3>研讀欄由上到下</h3>
+      <ol>
+        <li><b>經文</b>：和合本這一節的全文（最上方）。</li>
+        <li><b>原文字彙分析</b>：按原文語序列出每個字（說明見下）。</li>
+        <li><b>CBOL 註解重點</b>：信望愛站的中文註解大綱。</li>
+        <li><b>註解</b>：各本註釋書，每本一則。</li>
+        <li><b>串珠</b>：與本節相關的其他經文，點一下跳過去。</li>
+        <li><b>其他譯本</b>：KJV、BSB、ASV，放最後，要對照時再展開。</li>
+      </ol>
 
       <h3>原文字彙分析</h3>
       <p>按原文語序列出這一節的每一個字，欄位意思如下：</p>
@@ -511,7 +545,7 @@
         <dd>冠詞、受詞記號這類沒有獨立意思的小字，預設收起，可按「顯示虛字」展開。</dd>
       </dl>
 
-      <h3>其他區塊</h3>
+      <h3>研讀欄各區塊細節</h3>
       <dl>
         <dt>CBOL 註解重點</dt>
         <dd>信望愛站的中文註解（含原文編號、字義、經文參照）。分層大綱、◎、● 已整理成可讀的層級，經文參照可點。</dd>
