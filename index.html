@@ -517,6 +517,7 @@
         <li><b>串珠</b>：與本節相關的其他經文，點一下跳過去。</li>
         <li><b>其他譯本</b>：KJV、BSB、ASV，放最後，要對照時再展開。</li>
       </ol>
+      <p>這五個區塊<b>預設全部收起</b>，只列出標題與數量；點標題即展開、再點收起。原文字彙分析的內容在背景先抓好，展開時不用等。</p>
 
       <h3>原文字彙分析</h3>
       <p>按原文語序列出這一節的每一個字，欄位意思如下：</p>
@@ -915,27 +916,26 @@ for(const s of (d.sections || [])){
     if(strong){
       // 原文字彙分析（附「和合本用詞」）；舊的「字詞對照」表已不顯示
       strongZhMap = zhByStrong(s.body);
-      html += `<details class="sec parse-sec" open>
+      html += `<details class="sec parse-sec">
         <summary>原文字彙分析<span class="count">原文語序 · 附和合本用詞</span></summary>
         <div class="sec-body" id="parseBody">${skeleton(4)}</div>
       </details>`;
       continue;
     }
-    const open = /CBOL/.test(title);
-    html += `<details class="sec"${open ? ' open' : ''}>
+    html += `<details class="sec">
       <summary>${esc(title)}</summary>
       <div class="sec-body md">${/^CBOL/.test(title) ? cbol2html(s.body) : md2html(s.body)}</div>
     </details>`;
   }
   // 註解：按註釋書分塊（每則中英並存，英文可展開）
   if(hasEnCom || hasZhCom){
-    html += `<details class="sec" open>
+    html += `<details class="sec">
       <summary>註解<span class="count" id="noteCount">…</span></summary>
       <div class="sec-body" id="noteBody">${skeleton(3)}</div>
     </details>`;
   }
   if(xr.length){
-    html += `<details class="sec" open><summary>串珠 <span class="count">${xr.length}</span></summary>
+    html += `<details class="sec"><summary>串珠 <span class="count">${xr.length}</span></summary>
       <div class="sec-body">
         <div class="xrefs">
           ${xs.map(x=>`<button class="xref" data-code="${x.code}" data-ch="${x.ch}" data-v="${x.v}">
