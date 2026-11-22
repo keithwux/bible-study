@@ -20,7 +20,7 @@
     --serif:"Bible Serif","PMingLiU","MingLiU","新細明體","Songti TC","Songti SC","STSong","宋體-繁","宋体-简","Noto Serif TC","Noto Serif CJK TC","Source Han Serif TC",Georgia,serif;
     --sans:-apple-system,"PingFang TC","Noto Sans TC","Helvetica Neue",sans-serif;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
-    --header:56px;
+    --header:56px; --zh-size:19px;
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -99,11 +99,13 @@
   .crumb{font-family:var(--serif);font-size:26px;letter-spacing:.06em;line-height:1.25}
   .crumb em{font-style:normal;display:block;font-family:var(--sans);font-size:11.5px;
     letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:7px}
-  .chapnav{display:flex;align-items:center;gap:4px}
-  .chapnav button{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);
+  .chapnav{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+  .reader-fs{display:flex;gap:2px;margin-right:6px;padding-right:8px;border-right:1px solid var(--line)}
+  .reader-fs .font-size-btn{min-width:24px;height:28px;font-size:11px}
+  .chapnav>button{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);
     border-radius:8px;color:var(--muted);background:var(--panel)}
-  .chapnav button:hover:not(:disabled){color:var(--ink);border-color:var(--accent)}
-  .chapnav button:disabled{opacity:.3;cursor:default}
+  .chapnav>button:hover:not(:disabled){color:var(--ink);border-color:var(--accent)}
+  .chapnav>button:disabled{opacity:.3;cursor:default}
   .chapnav span{font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 6px}
 
   .verse{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:9px 12px;
@@ -114,7 +116,7 @@
     background:var(--accent);border-radius:2px}
   .vn{font-family:var(--mono);font-size:11px;color:var(--accent);padding-top:7px;text-align:right;
     user-select:none}
-  .zh{font-family:var(--serif);font-size:19px;line-height:1.95;letter-spacing:.01em}
+  .zh{font-family:var(--serif);font-size:var(--zh-size);line-height:1.95;letter-spacing:.01em}
   .en{grid-column:2;color:var(--muted);font-size:12.5px;line-height:1.65;margin-top:5px}
   .en b{font-family:var(--mono);font-weight:500;font-size:10.5px;letter-spacing:.04em;
     color:var(--accent);margin-right:6px}
@@ -369,7 +371,8 @@
     .reader-inner{max-width:none;padding:22px 20px 88px}
     .reader-head{margin:-22px 0 12px;padding:18px 0 10px}
     .crumb{font-size:22px}
-    .zh{font-size:18px;line-height:1.9}
+    :root{--zh-size:18px}
+    .zh{line-height:1.9}
     .study{display:none;position:fixed;inset:var(--header) 0 0;border-left:0;z-index:25;
       background:var(--panel);overflow-y:auto;-webkit-overflow-scrolling:touch}
     .splitter{display:none}
@@ -426,6 +429,11 @@
       <div class="reader-head">
         <div class="crumb"><em id="crumbSub">舊約 · 第 1 章</em><span id="crumbName">創世記</span></div>
         <div class="chapnav">
+          <div class="reader-fs">
+            <button class="font-size-btn fsr1" title="經文字級：小" aria-label="經文字級小">A−</button>
+            <button class="font-size-btn fsr2 active" title="經文字級：中" aria-label="經文字級中">A</button>
+            <button class="font-size-btn fsr3" title="經文字級：大" aria-label="經文字級大">A+</button>
+          </div>
           <button id="prevCh" aria-label="上一章">←</button>
           <span id="chPos">1 / 50</span>
           <button id="nextCh" aria-label="下一章">→</button>
@@ -467,7 +475,7 @@
         <li>上方書卷＋章號（<b>創世記 2</b>）可跳書卷與章；<b>←</b> <b>→</b> 按鈕或鍵盤左右鍵換章。</li>
         <li>搜尋列可打經文（<code>創1:1</code>、<code>約3:16-18</code>）、關鍵字（<b>真理</b>）、原文詞（<b>愛</b>）或 Strong 編號（<b>G2316</b>），記得左邊選對方式。</li>
         <li><b>EN</b> 開關顯示或收起每節下面的 KJV、BSB、ASV 三種英文譯本。</li>
-        <li>右欄上方的 <b>A−</b> <b>A</b> <b>A+</b> 調整整體字級，選擇會記住。</li>
+        <li>字級分開控制、各自記住：經文頁章節切換鈕左邊的 <b>A−</b> <b>A</b> <b>A+</b> 調經文大小，右欄上方的 <b>A−</b> <b>A</b> <b>A+</b> 調研讀欄大小。手機上兩組也各自不同（經文 16/18/21px、研讀 16/18/20px）。</li>
         <li>桌面與平板橫向是左右雙欄，中間細線可左右拖動調寬度、雙擊重設；平板直立與手機改用上方「經文／研讀」分頁。</li>
         <li>點串珠或經文參照裡的任何一節，會直接跳到該章該節並閃一下。</li>
       </ol>
@@ -1476,10 +1484,25 @@ function applyFS(idx){
 document.addEventListener('click', e => {
   const b = e.target && e.target.closest ? e.target.closest('.font-size-btn') : null;
   if(!b || !b.parentNode) return;
-  applyFS(Array.prototype.indexOf.call(b.parentNode.children, b));
+  const idx = Array.prototype.indexOf.call(b.parentNode.children, b);
+  if(b.closest('.reader-fs')) applyReaderFS(idx);
+  else applyFS(idx);
 });
 applyFS(fsIndex);
-if (MQ_MOBILE.addEventListener) MQ_MOBILE.addEventListener('change', () => applyFS(fsIndex));
+/* 經文字級（經文欄自己的三級，和研讀欄分開記住） */
+const RFS_DESKTOP = ['17px', '19px', '22px'];
+const RFS_MOBILE = ['16px', '18px', '21px'];
+let rfsIndex = parseInt(localStorage.getItem('bible.readerFontSize'), 10);
+if(!(rfsIndex >= 0 && rfsIndex <= 2)) rfsIndex = 1;
+function applyReaderFS(idx){
+  rfsIndex = idx;
+  const sizes = MQ_MOBILE.matches ? RFS_MOBILE : RFS_DESKTOP;
+  document.documentElement.style.setProperty('--zh-size', sizes[idx]);
+  document.querySelectorAll('.reader-fs .font-size-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  localStorage.setItem('bible.readerFontSize', String(idx));
+}
+applyReaderFS(rfsIndex);
+if (MQ_MOBILE.addEventListener) MQ_MOBILE.addEventListener('change', () => { applyFS(fsIndex); applyReaderFS(rfsIndex); });
 function toast(msg){
   const t = $('#toast');
   t.textContent = msg;
