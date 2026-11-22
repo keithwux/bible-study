@@ -240,20 +240,37 @@
         font-size:1.15em;color:var(--ink);
         border:1px solid var(--line);border-radius:999px;padding:.05em .6em;white-space:nowrap}
   /* 註解：依註釋書分塊 */
-  .note-src{border-top:1px solid var(--line);padding:.85em 0 .55em}
-  .note-src:first-child{border-top:0;padding-top:.2em}
-  .note-head{display:flex;align-items:baseline;gap:.5em;margin-bottom:.35em}
-  .note-head b{font-family:var(--sans);font-size:.95em;font-weight:600;color:var(--accent-ink)}
-  .note-lic{font-family:var(--sans);font-size:.76em;color:var(--muted);
+  /* 註解：學者 → 中文 → 英文，三層各自收合 */
+  details.note-src{border-top:1px solid var(--line);padding:.35em 0}
+  details.note-src:first-child{border-top:0;padding-top:.1em}
+  details.note-src>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;
+    gap:.45em;flex-wrap:wrap;padding:.4em 0;font-family:var(--sans);font-size:.95em;
+    font-weight:600;color:var(--accent-ink)}
+  details.note-src>summary::-webkit-details-marker{display:none}
+  details.note-src>summary::before{content:"›";font-weight:400;color:var(--muted);
+    font-size:.95em;transition:transform .15s}
+  details.note-src[open]>summary::before{transform:rotate(90deg)}
+  details.note-src>summary:hover{color:var(--ink)}
+  .note-src-body{padding:0 0 .3em .95em;border-left:1px solid var(--line);margin:.1em 0 .5em .25em}
+  details.note-zh{margin:.15em 0}
+  details.note-zh>summary,details.note-en>summary{list-style:none;cursor:pointer;
+    font-family:var(--sans);font-size:.9em;color:var(--muted);padding:.32em 0;
+    display:flex;align-items:baseline;gap:.4em}
+  details.note-zh>summary::-webkit-details-marker,
+  details.note-en>summary::-webkit-details-marker{display:none}
+  details.note-zh>summary::before,details.note-en>summary::before{content:"›";
+    color:var(--line);transition:transform .15s}
+  details.note-zh[open]>summary::before,details.note-en[open]>summary::before{transform:rotate(90deg)}
+  details.note-zh>summary:hover,details.note-en>summary:hover{color:var(--accent-ink)}
+  details.note-zh>summary .count,details.note-en>summary .count{margin-left:auto;
+    font-family:var(--mono);font-size:.82em;color:var(--line)}
+  .note-zh-body{padding:.1em 0 .2em .9em;border-left:1px solid var(--line);margin-left:.2em}
+  details.note-en{font-size:.95em;margin:.35em 0 .1em}
+  .note-en-body{padding:.1em 0 .2em .9em;border-left:1px solid var(--line);margin-left:.2em}
+  .note-lic{font-family:var(--sans);font-size:.76em;font-weight:400;color:var(--muted);
             border:1px solid var(--line);border-radius:999px;padding:0 .45em}
   .note-p{margin:.55em 0;line-height:1.95}
   .note-p.en{color:var(--muted)}
-  .note-en{margin:.4em 0 .1em}
-  .note-en>summary{font-family:var(--sans);font-size:.8em;color:var(--muted);cursor:pointer}
-  .note-en>summary:hover{color:var(--accent-ink)}
-  .note-whole{margin:.3em 0}
-  .note-whole>summary{font-family:var(--sans);font-size:.82em;color:var(--accent-ink);cursor:pointer;
-                      border:1px dashed var(--line);border-radius:6px;padding:.35em .6em}
   .note-note{font-family:var(--sans);font-size:.78em;color:var(--muted);margin:.45em 0 .1em;line-height:1.6}  .p-def{font-size:1em;line-height:1.75;color:#000;margin-top:.2em}
   html[data-theme="dark"] .p-def{color:#fff}
   .parse-more{margin-top:.6em}
@@ -553,7 +570,7 @@
         <dt>CBOL 註解重點</dt>
         <dd>信望愛站的中文註解（含原文編號、字義、經文參照）。分層大綱、◎、● 已整理成可讀的層級，經文參照可點。</dd>
         <dt>註解</dt>
-        <dd>各本英文註釋書（公有領域，另有 Tyndale，CC BY-SA 4.0）。每本一則，先給中文譯本，<b>English 原文</b> 可展開；標籤顯示這一則涵蓋哪幾節，涵蓋整章的超長註解收在「展開整章註解」。</dd>
+        <dd>各本英文註釋書（公有領域，另有 Tyndale，CC BY-SA 4.0）。<b>一層一層收合</b>：先點學者名字（第二層），展開後是「中文註解」（第三層），中文裡再展開「英文註解」（第四層）。標籤顯示這一則涵蓋哪幾節，涵蓋整章的註解會標「整章 x–y 節」。</dd>
         <dt>串珠</dt>
         <dd>與本節相關的其他經文（信望愛串珠），點一下跳過去。</dd>
         <dt>其他譯本</dt>
@@ -1154,25 +1171,28 @@ function renderNoteSrc(s){
   else if(s.whole && vs.length) tag = `<span class="note-lic">整章 ${vs[0]}–${vs[vs.length - 1]} 節</span>`;
   else if(vs.length > 1) tag = `<span class="note-lic">${vs[0]}–${vs[vs.length - 1]} 節</span>`;
 
-  const enHtml = enP.length
-    ? enP.map(p => `<p class="note-p en">${esc(p)}</p>`).join('')
-    : '';
-  let body = '';
+  const enHtml = enP.map(p => `<p class="note-p en">${esc(p)}</p>`).join('');
+  const zhHtml = zhP.map(p => `<p class="note-p">${esc(p)}</p>`).join('');
+  const enDets = enP.length ? `<details class="note-en">
+        <summary>英文註解<span class="count">${enP.length} 段</span></summary>
+        <div class="note-en-body">${enHtml}
+          <p class="note-note">中文為該註釋書的中文譯本，非逐句對譯；以英文原文為準。</p>
+        </div></details>` : '';
+
+  let body;
   if(zhP.length){
-    body = zhP.map(p => `<p class="note-p">${esc(p)}</p>`).join('');
-    if(enP.length){
-      body += `<details class="note-en"><summary>English 原文 · ${enP.length} 段</summary>${enHtml}</details>
-        <p class="note-note">中文為該註釋書的中文譯本，非逐句對譯；以英文原文為準。</p>`;
-    }
+    body = `<details class="note-zh">
+        <summary>中文註解<span class="count">${zhP.length} 段</span></summary>
+        <div class="note-zh-body">${zhHtml}${enDets}</div></details>`;
+  }else if(enP.length){
+    body = enDets.replace('英文註解', '英文註解（無中文譯本）');
   }else{
-    body = enHtml;
+    body = '<p class="note-note">這一節這本註釋書沒有內容。</p>';
   }
-  if(s.whole && vs.length){
-    body = `<details class="note-whole"><summary>展開整章註解（${vs[0]}–${vs[vs.length - 1]} 節）</summary>${body}</details>`;
-  }
-  return `<div class="note-src">
-    <div class="note-head"><b>${esc(s.name)}</b>${s.lic ? `<span class="note-lic">${esc(s.lic)}</span>` : ''}${tag}</div>
-    ${body}</div>`;
+  return `<details class="note-src">
+    <summary>${esc(s.name)}${s.lic ? `<span class="note-lic">${esc(s.lic)}</span>` : ''}${tag}</summary>
+    <div class="note-src-body">${body}</div>
+  </details>`;
 }
 
 function renderStrong(body){
