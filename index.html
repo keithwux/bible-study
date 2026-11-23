@@ -938,7 +938,7 @@ for(const s of (d.sections || [])){
     if(strong){
       // 原文字彙分析（附「和合本用詞」）；舊的「字詞對照」表已不顯示
       strongZhMap = zhByStrong(s.body);
-      html += `<details class="sec parse-sec">
+      html += `<details class="sec parse-sec" open>
         <summary>原文字彙分析<span class="count">原文語序 · 附和合本用詞</span></summary>
         <div class="sec-body" id="parseBody">${skeleton(4)}</div>
       </details>`;
@@ -1401,8 +1401,17 @@ function onKey(e){
     if(state.view === 'study' && innerWidth <= 900){ setView('reader'); return; }
     return;
   }
-  if(e.key === 'ArrowLeft'){ e.preventDefault(); gotoChapter(state.ch - 1); return; }
-  if(e.key === 'ArrowRight'){ e.preventDefault(); gotoChapter(state.ch + 1); return; }
+  // 桌面版：若滑鼠懸停在研讀欄上，左右鍵改為換節；否則保持換章
+  const inStudy = innerWidth > 900 && document.body.dataset.view === 'study';
+  const overStudy = inStudy && e.target && e.target.closest && e.target.closest('.study');
+  if(e.key === 'ArrowLeft'){
+    if(overStudy) { e.preventDefault(); moveSel(-1); return; }
+    e.preventDefault(); gotoChapter(state.ch - 1); return;
+  }
+  if(e.key === 'ArrowRight'){
+    if(overStudy) { e.preventDefault(); moveSel(1); return; }
+    e.preventDefault(); gotoChapter(state.ch + 1); return;
+  }
   if(e.key === 'j' || e.key === 'ArrowDown'){ e.preventDefault(); moveSel(1); return; }
   if(e.key === 'k' || e.key === 'ArrowUp'){ e.preventDefault(); moveSel(-1); return; }
 }
